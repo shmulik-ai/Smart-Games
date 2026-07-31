@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>היפותטית v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1:#0D0920; --bg2:#1B1042; --glass:#221A48; --glass2:#2B2158;
+    --txt:#F2EFFF; --muted:#8E86B8;
+    --cyan:#4DE3FF; --magenta:#FF4D9D; --amber:#FFB347; --lime:#8CF19A; --violet:#B18CFF;
+    --good:#3EE08F; --bad:#FF5470;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Heebo',sans-serif;color:var(--txt);overflow-x:hidden;min-height:100vh;
+    background:linear-gradient(165deg,var(--bg1) 0%,var(--bg2) 55%,#251057 100%);
+    background-attachment:fixed;
+  }
+  /* שדה כוכבים */
+  .stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+  .stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:.5;animation:tw 3s ease-in-out infinite}
+  @keyframes tw{0%,100%{opacity:.15}50%{opacity:.7}}
+  .wrap{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:16px 16px 36px;min-height:100vh;display:flex;flex-direction:column}
+  .screen{display:none;flex:1;flex-direction:column}
+  .screen.active{display:flex}
+
+  h1{font-family:'Karantina';font-weight:700;font-size:clamp(52px,15vw,86px);line-height:.9;text-align:center;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta) 55%,var(--amber));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:14px;margin-top:6px;font-weight:500;text-align:center;line-height:1.6}
+
+  label{font-size:12.5px;color:var(--muted);font-weight:700}
+  input{background:var(--glass);border:1px solid rgba(177,140,255,.3);border-radius:14px;
+    padding:12px 16px;color:var(--txt);font-family:'Heebo';font-size:17px;font-weight:700;
+    outline:none;width:100%;text-align:center}
+  input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(77,227,255,.15)}
+  input.code{letter-spacing:.35em;font-size:23px}
+
+  .btn{border:none;border-radius:16px;padding:15px 22px;font-family:'Heebo';font-weight:900;
+    font-size:17px;cursor:pointer;transition:transform .12s;color:#14102B}
+  .btn:active{transform:scale(.96)}
+  .btn-main{background:linear-gradient(90deg,var(--cyan),var(--violet));box-shadow:0 8px 28px rgba(77,227,255,.28)}
+  .btn-ghost{background:var(--glass);color:var(--txt);border:1px solid rgba(177,140,255,.3)}
+
+  .howto{background:rgba(34,26,72,.75);border-radius:14px;padding:12px 15px;font-size:12.5px;
+    line-height:1.7;color:#C6BFEA;border:1px solid rgba(177,140,255,.22)}
+  .howto b{color:var(--cyan)}
+
+  /* ---------- מסך ראשי ---------- */
+  .totalbar{display:flex;gap:10px;margin:18px 0 8px}
+  .tchip{flex:1;background:var(--glass);border-radius:16px;padding:11px;text-align:center;border:1px solid rgba(177,140,255,.22)}
+  .tchip .nm{font-size:12px;color:var(--muted);font-weight:700}
+  .tchip .sc{font-family:'Karantina';font-size:36px;line-height:1;font-weight:700;color:var(--amber)}
+  .seslbl{text-align:center;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:4px}
+  .tile{
+    position:relative;border-radius:19px;padding:15px 13px;cursor:pointer;overflow:hidden;
+    background:var(--glass);border:1.5px solid transparent;transition:transform .15s;
+  }
+  .tile:active{transform:scale(.96)}
+  .tile .glow{position:absolute;inset:0;opacity:.16;pointer-events:none}
+  .tile svg{width:34px;height:34px;margin-bottom:8px}
+  .tile .tname{font-size:14.5px;font-weight:900;line-height:1.25}
+  .tile .tleft{font-size:11px;color:var(--muted);font-weight:700;margin-top:3px}
+  .tile.done{opacity:.55}
+
+  /* ---------- משחק ---------- */
+  .gametop{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+  .homebtn{background:var(--glass);border:1px solid rgba(177,140,255,.3);border-radius:12px;
+    color:var(--txt);font-size:17px;width:40px;height:40px;cursor:pointer;flex-shrink:0;font-family:'Heebo'}
+  .scorechip{flex:1;background:var(--glass);border-radius:13px;padding:7px 10px;text-align:center;
+    border:1.5px solid transparent;transition:border-color .3s}
+  .scorechip.turn{border-color:var(--amber);box-shadow:0 0 16px rgba(255,179,71,.25)}
+  .scorechip .nm{font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .scorechip.turn .nm{color:var(--amber)}
+  .scorechip .sc{font-family:'Karantina';font-size:27px;line-height:1;font-weight:700}
+  .sc.pop{animation:pop .5s}
+  @keyframes pop{40%{transform:scale(1.55);color:var(--good)}}
+  .cardcount{font-family:'Karantina';font-size:24px;color:var(--cyan);font-weight:700;white-space:nowrap}
+
+  .progress{height:5px;background:var(--glass);border-radius:99px;overflow:hidden;margin-bottom:14px}
+  .progress i{display:block;height:100%;width:0%;transition:width .4s;border-radius:99px;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta))}
+
+  .stage{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .qcard{
+    position:relative;border-radius:24px;padding:22px 20px 20px;text-align:center;
+    background:linear-gradient(170deg,var(--glass),var(--glass2));
+    border:1.5px solid rgba(177,140,255,.3);
+    box-shadow:0 18px 50px rgba(0,0,0,.45);
+    animation:cardin .45s cubic-bezier(.2,.8,.3,1);
+  }
+  @keyframes cardin{from{transform:translateY(26px) scale(.94);opacity:0}}
+  .qcard.shake{animation:shake .5s}
+  @keyframes shake{15%{transform:translateX(-9px)}30%{transform:translateX(8px)}45%{transform:translateX(-6px)}60%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+  .qcard.glowgood{border-color:var(--good);box-shadow:0 0 40px rgba(62,224,143,.35),0 18px 50px rgba(0,0,0,.45)}
+  .qcard.glowbad{border-color:var(--bad);box-shadow:0 0 40px rgba(255,84,112,.3),0 18px 50px rgba(0,0,0,.45)}
+  .emoart{
+    width:84px;height:84px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;
+    font-size:44px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.16),rgba(255,255,255,.03));
+    border:1.5px solid rgba(177,140,255,.35);
+  }
+  .cat{display:inline-block;font-size:11.5px;font-weight:900;border-radius:999px;padding:4px 13px;margin-bottom:11px;color:#14102B}
+  .qtext{font-size:clamp(18px,5vw,23px);font-weight:900;line-height:1.45}
+  .qsub{margin-top:9px;font-size:12.5px;color:var(--muted);font-weight:500;line-height:1.6}
+  .fact{
+    display:none;margin-top:13px;background:rgba(77,227,255,.1);border:1.5px dashed rgba(77,227,255,.4);
+    border-radius:14px;padding:10px 13px;font-size:14px;font-weight:700;color:#BFF0FF;line-height:1.55;
+  }
+  .fact.show{display:block;animation:cardin .35s}
+
+  .opts{margin-top:15px;display:none;flex-direction:column;gap:9px}
+  .opts.show{display:flex}
+  .opt{
+    background:rgba(13,9,32,.55);border:1.5px solid rgba(177,140,255,.35);border-radius:14px;
+    padding:13px 14px;font-family:'Heebo';font-size:15.5px;font-weight:800;color:var(--txt);
+    cursor:pointer;transition:transform .1s,border-color .2s;text-align:center;
+  }
+  .opt:active{transform:scale(.97)}
+  .opt.correct{background:rgba(62,224,143,.2);border-color:var(--good);color:#CFFFE4}
+  .opt.wrong{background:rgba(255,84,112,.16);border-color:var(--bad);color:#FFD3DC;opacity:.9}
+  .opt.dim{opacity:.35;pointer-events:none}
+  .opts.tf{flex-direction:row}
+  .opts.tf .opt{flex:1;font-size:17px;padding:15px 8px}
+
+  .acts{margin-top:13px;display:none;gap:9px}
+  .acts.show{display:flex}
+  .acts .btn{flex:1;font-size:14.5px;padding:12px 8px}
+  .btn-good{background:linear-gradient(90deg,var(--lime),var(--cyan))}
+  .btn-bad{background:var(--glass);color:var(--muted);border:1px solid rgba(177,140,255,.3)}
+  .btn-next{background:linear-gradient(90deg,var(--amber),var(--magenta))}
+
+  .turnline{text-align:center;margin-top:11px;font-size:13px;color:var(--muted);font-weight:700;min-height:20px}
+  .turnline b{color:var(--amber)}
+  .fixbtn{background:none;border:none;color:var(--muted);font-family:'Heebo';font-weight:700;
+    font-size:12px;margin-top:10px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;align-self:center}
+
+  /* ---------- סיכום סשן ---------- */
+  .sumhero{text-align:center;margin-top:8vh}
+  .sumhero .bigemo{font-size:74px;filter:drop-shadow(0 0 26px rgba(255,179,71,.5))}
+  .sumhero h2{font-family:'Karantina';font-size:clamp(50px,14vw,80px);font-weight:700;line-height:1;margin-top:8px;
+    background:linear-gradient(90deg,var(--amber),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sumhero p{color:var(--muted);font-weight:700;margin-top:8px;font-size:15px;line-height:1.6}
+  .sumscores{display:flex;gap:12px;margin-top:26px}
+  .sumscores .tchip .sc{font-size:44px}
+  .sumscores .tchip .plus{font-size:12px;color:var(--good);font-weight:900}
+  .sumbtns{display:flex;flex-direction:column;gap:10px;margin-top:26px}
+
+  .toast{position:fixed;bottom:20px;right:50%;transform:translateX(50%);background:var(--magenta);
+    color:#fff;font-weight:700;font-size:14px;padding:10px 20px;border-radius:999px;
+    opacity:0;transition:opacity .3s;pointer-events:none;z-index:99;max-width:86vw;text-align:center}
+  .toast.on{opacity:1}
+  .synctag{text-align:center;font-size:11px;color:var(--cyan);font-weight:900;margin-top:6px}
+
+  /* קונפטי */
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+  .confetti i{position:absolute;width:9px;height:9px;top:-12px;border-radius:2px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:.2}}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="wrap">
+
+  <!-- הגדרה ראשונית -->
+  <div class="screen active" id="s-setup">
+    <div style="margin-top:6vh"></div>
+    <h1>היפותטית</h1>
+    <div class="sub">ערכת לילה - סשנים קצרים, שני טלפונים, אפס רחמים</div>
+    <div id="verbadge" style="text-align:center;margin-top:8px;font-size:12px;font-weight:900;color:#FF5470">גרסה 4 - אם זה אדום, הסקריפט לא נטען</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:3.5vh">
+      <label>הקוד המשותף (אותו קוד בשני הטלפונים)</label>
+      <input id="code" class="code" maxlength="4" inputmode="numeric" placeholder="למשל 7812">
+      <label>השם שלך</label>
+      <input id="myname" maxlength="12" placeholder="השם שלך">
+      <label>השם של הצד השני</label>
+      <input id="othername" maxlength="12" placeholder="השם שלו/ה">
+      <div class="howto">
+        <b>איך משחקים:</b> בוחרים נושא, משחקים סשן קצר של 8 קלפים, וחוזרים למסך הראשי לנושא הבא.
+        מי שבתורו עונה <b>בקול</b> - ואז שניכם מקישים על אותה תשובה, כדי ששני הטלפונים יישארו תאומים.
+        משחקים את הסשנים באותו סדר בשני המכשירים.
+      </div>
+      <button type="button" id="btnSetup" class="btn btn-main">למסך הראשי</button>
+    </div>
+  </div>
+
+  <!-- מסך ראשי -->
+  <div class="screen" id="s-home">
+    <div style="margin-top:2vh"></div>
+    <h1>היפותטית</h1>
+    <div class="synctag" id="hometag"></div>
+    <div class="totalbar">
+      <div class="tchip"><div class="nm" id="hn0"></div><div class="sc" id="hs0">0</div></div>
+      <div class="tchip"><div class="nm" id="hn1"></div><div class="sc" id="hs1">0</div></div>
+    </div>
+    <div class="seslbl" id="seslbl"></div>
+    <div class="tiles" id="tiles"></div>
+    <button type="button" id="btnReset" class="fixbtn">איפוס מלא</button>
+  </div>
+
+  <!-- משחק -->
+  <div class="screen" id="s-game">
+    <div class="gametop">
+      <button type="button" id="btnQuit" class="homebtn">⌂</button>
+      <div class="scorechip" id="chip0"><div class="nm" id="nm0"></div><div class="sc" id="sc0">0</div></div>
+      <div class="cardcount" id="cardcount">1/8</div>
+      <div class="scorechip" id="chip1"><div class="nm" id="nm1"></div><div class="sc" id="sc1">0</div></div>
+    </div>
+    <div class="progress"><i id="pbar"></i></div>
+    <div class="stage">
+      <div class="qcard" id="qcard">
+        <div class="emoart" id="emoart">❔</div>
+        <span class="cat" id="cat"></span>
+        <div class="qtext" id="qtext"></div>
+        <div class="qsub" id="qsub"></div>
+        <div class="fact" id="fact"></div>
+        <div class="opts" id="opts"></div>
+        <div class="acts" id="acts"></div>
+      </div>
+      <div class="turnline" id="turnline"></div>
+      <button type="button" id="btnUndo" class="fixbtn">קלף אחורה (תיקון)</button>
+    </div>
+  </div>
+
+  <!-- סיכום סשן -->
+  <div class="screen" id="s-sum">
+    <div class="sumhero">
+      <div class="bigemo" id="sumemo">🏆</div>
+      <h2 id="sumtitle"></h2>
+      <p id="sumsub"></p>
+    </div>
+    <div class="sumscores">
+      <div class="tchip"><div class="nm" id="sn0"></div><div class="sc" id="ss0"></div><div class="plus" id="sp0"></div></div>
+      <div class="tchip"><div class="nm" id="sn1"></div><div class="sc" id="ss1"></div><div class="plus" id="sp1"></div></div>
+    </div>
+    <div class="sumbtns">
+      <button type="button" id="btnSumNext" class="btn btn-main">סשן נוסף בנושא אחר</button>
+      <button type="button" id="btnSumHome" class="btn btn-ghost">למסך הראשי</button>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+<div class="confetti" id="confetti"></div>
+
+<script>
+/* ---------- אייקוני SVG לנושאים ---------- */
+const ICONS={
+  sci:'<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="5" fill="#4DE3FF"/><ellipse cx="32" cy="32" rx="24" ry="10" stroke="#4DE3FF" stroke-width="3"/><ellipse cx="32" cy="32" rx="24" ry="10" stroke="#4DE3FF" stroke-width="3" transform="rotate(60 32 32)"/><ellipse cx="32" cy="32" rx="24" ry="10" stroke="#4DE3FF" stroke-width="3" transform="rotate(120 32 32)"/></svg>',
+  triv:'<svg viewBox="0 0 64 64" fill="none"><path d="M20 10h24v7c0 9-5 15-12 15s-12-6-12-15v-7z" fill="#FFB347"/><path d="M20 13h-6c0 7 2 11 8 13M44 13h6c0 7-2 11-8 13" stroke="#FFB347" stroke-width="3" fill="none"/><rect x="29" y="32" width="6" height="7" fill="#D68F2E"/><rect x="22" y="39" width="20" height="5" rx="2" fill="#FFB347"/><rect x="19" y="45" width="26" height="5" rx="2" fill="#D68F2E"/></svg>',
+  hypo:'<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="27" r="15" stroke="#FF4D9D" stroke-width="3.5"/><path d="M25 46h14M27 51h10" stroke="#FF4D9D" stroke-width="3.5" stroke-linecap="round"/><path d="M32 12v-6M47 27h6M11 27h6M43 15l4-4M21 15l-4-4" stroke="#FF4D9D" stroke-width="3" stroke-linecap="round"/></svg>',
+  who:'<svg viewBox="0 0 64 64" fill="none"><circle cx="22" cy="22" r="8" stroke="#B18CFF" stroke-width="3.5"/><path d="M8 48c0-8 6-13 14-13s14 5 14 13" stroke="#B18CFF" stroke-width="3.5" stroke-linecap="round"/><circle cx="45" cy="25" r="6.5" stroke="#B18CFF" stroke-width="3"/><path d="M35 48c1-7 5-11 10-11 6 0 10 4 11 11" stroke="#B18CFF" stroke-width="3" stroke-linecap="round"/></svg>',
+  myth:'<svg viewBox="0 0 64 64" fill="none"><path d="M14 30l10 10 26-26" stroke="#8CF19A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 40l12 12M52 40L40 52" stroke="#FF5470" stroke-width="5" stroke-linecap="round"/></svg>'
+};
+/* ---------- נושאים וקלפים ---------- */
+/* t: mc=רב-ברירה | tf=אמת/מיתוס | guess=נחש אותי | open=פתוחה | who=מי מאיתנו */
+const PACKS={
+  sci:{name:'מדע וחלל',color:'#4DE3FF',cards:[
+    {t:'mc',e:'☀️',q:'כמה זמן לוקח לאור השמש להגיע אלינו?',o:['בערך 8 דקות','בערך 8 שניות','בערך 8 שעות'],f:'8 דקות ו-20 שניות. כשמסתכלים על השמש - רואים עבר.'},
+    {t:'mc',e:'🔥',q:'איזה כוכב לכת הכי חם במערכת השמש?',o:['נוגה','כוכב חמה','מאדים'],f:'אפקט החממה של נוגה מטגן אותה ל-460 מעלות, למרות שחמה קרוב יותר לשמש.'},
+    {t:'mc',e:'🪐',q:'ממה עשויות הטבעות של שבתאי?',o:['גושי קרח ואבנים','גז דחוס','אבק זהב'],f:'ממיליארדי חלקיקים - מגרגרים ועד סלעים בגודל בית.'},
+    {t:'mc',e:'🌳',q:'מה יש יותר?',o:['עצים בכדור הארץ','כוכבים בשביל החלב','בערך אותו דבר'],f:'בערך 3 טריליון עצים מול כמה מאות מיליארדי כוכבים בגלקסיה שלנו.'},
+    {t:'mc',e:'🐙',q:'כמה לבבות יש לתמנון?',o:['שלושה','אחד','חמישה'],f:'שניים לזימים, אחד לגוף. והדם שלו כחול.'},
+    {t:'mc',e:'⚡',q:'מה מהירות האור?',o:['300 אלף ק"מ בשנייה','300 אלף קמ"ש','3,000 ק"מ בשנייה'],f:'7.5 הקפות של כדור הארץ - בשנייה אחת.'},
+    {t:'mc',e:'🦴',q:'למי יש יותר עצמות?',o:['לתינוק','למבוגר','אותו מספר'],f:'תינוק נולד עם כ-300 עצמות, וחלקן מתאחות עד 206.'},
+    {t:'mc',e:'🧊',q:'מה כבד יותר?',o:['ליטר מים','ליטר קרח','שוקלים אותו דבר'],f:'קרח פחות צפוף - ולכן קוביות צפות בכוס.'},
+    {t:'mc',e:'🌀',q:'איזה כוכב לכת מסתובב "שוכב על הצד"?',o:['אורנוס','נפטון','צדק'],f:'הציר שלו מוטה כמעט 98 מעלות - כנראה מהתנגשות ענקית.'},
+    {t:'mc',e:'🐝',q:'כמה דבש מייצרת דבורה אחת בכל חייה?',o:['בערך 1/12 כפית','צנצנת שלמה','כוס מלאה'],f:'צנצנת דבש אחת = עבודת חיים של מאות דבורים.'},
+    {t:'mc',e:'💎',q:'מה החומר הטבעי הקשה ביותר?',o:['יהלום','פלדה','גרניט'],f:'פחמן רגיל לגמרי - רק מסודר בצורה עקשנית במיוחד.'},
+    {t:'mc',e:'🍌',q:'כמה מהחומר הגנטי שלנו משותף לבננה?',o:['בערך 50-60%','בערך 5%','בערך 95%'],f:'כן, לבננה. חצי מהגנים. תחשבו על זה בארוחת בוקר.'},
+  ]},
+  triv:{name:'טריוויה',color:'#FFB347',cards:[
+    {t:'mc',e:'🗾',q:'מה בירת יפן?',o:['טוקיו','קיוטו','סיאול'],f:'קיוטו הייתה הבירה בעבר - במשך יותר מאלף שנה.'},
+    {t:'mc',e:'⚽',q:'כמה שחקנים לקבוצת כדורגל על המגרש?',o:['11','9','12'],f:'כולל השוער.'},
+    {t:'mc',e:'🖼️',q:'מי צייר את המונה ליזה?',o:['לאונרדו דה וינצ\'י','מיכלאנג\'לו','פיקאסו'],f:'והיא קטנה להפתיע - 77 על 53 ס"מ בלבד.'},
+    {t:'mc',e:'🏔️',q:'מה ההר הגבוה בעולם?',o:['אוורסט','K2','קילימנג\'רו'],f:'8,849 מטר - והוא עדיין גדל כמה מילימטרים בשנה.'},
+    {t:'mc',e:'🎸',q:'כמה מיתרים בגיטרה רגילה?',o:['שישה','חמישה','שבעה'],f:'E-A-D-G-B-E, למי שרוצה להשוויץ.'},
+    {t:'mc',e:'🐆',q:'מה החיה הכי מהירה ביבשה?',o:['ברדלס','אריה','סוס מרוץ'],f:'עד 110 קמ"ש - אבל רק לספרינט של שניות בודדות.'},
+    {t:'mc',e:'🍕',q:'איפה הומצאה הפיצה המודרנית?',o:['איטליה','יוון','צרפת'],f:'נאפולי. פיצה מרגריטה נקראה על שם מלכה אמיתית.'},
+    {t:'mc',e:'🌈',q:'כמה צבעים בקשת?',o:['שבעה','שישה','שמונה'],f:'אדום, כתום, צהוב, ירוק, כחול, אינדיגו, סגול.'},
+    {t:'mc',e:'🌏',q:'מה היבשת הגדולה בעולם?',o:['אסיה','אפריקה','אמריקה הצפונית'],f:'גם בשטח וגם באוכלוסייה - בערך 60% מבני האדם.'},
+    {t:'mc',e:'🐋',q:'מה בעל החיים הגדול ביותר שחי אי פעם?',o:['הלווייתן הכחול','דינוזאור ארגנטינוזאורוס','כריש מגלודון'],f:'והוא חי איתנו ממש עכשיו. הלב שלו בגודל של מכונית קטנה.'},
+    {t:'mc',e:'📈',q:'איך קוראים למכשיר שמודד רעידות אדמה?',o:['סייסמוגרף','ברומטר','תרמוסטט'],f:'ברומטר מודד לחץ אוויר. תרמוסטט - לסלון.'},
+    {t:'mc',e:'🏜️',q:'מה המקום הנמוך ביותר ביבשה בעולם?',o:['ים המלח','עמק המוות','הים הכספי'],f:'בערך 430 מטר מתחת לפני הים - במרחק נסיעה מהבית.'},
+  ]},
+  myth:{name:'אמת או מיתוס',color:'#8CF19A',cards:[
+    {t:'tf',e:'⚡',q:'ברק אף פעם לא פוגע פעמיים באותו מקום.',ans:false,f:'בניין האמפייר סטייט חוטף בערך 25 פגיעות בשנה.'},
+    {t:'tf',e:'🧱',q:'החומה הסינית נראית מהחלל בעין רגילה.',ans:false,f:'אסטרונאוטים מעידים: רואים כבישים וערים - אותה לא.'},
+    {t:'tf',e:'🧠',q:'אנחנו משתמשים רק ב-10% מהמוח.',ans:false,f:'סריקות מראות שכמעט כל המוח פעיל - גם בשינה.'},
+    {t:'tf',e:'🍯',q:'דבש כמעט לא מתקלקל לעולם.',ans:true,f:'מצאו דבש בן אלפי שנים בקברים מצריים - עדיין אכיל.'},
+    {t:'tf',e:'🦇',q:'עטלפים עיוורים לגמרי.',ans:false,f:'הם רואים לא רע - הסונאר הוא פשוט בונוס מטורף.'},
+    {t:'tf',e:'🐙',q:'לתמנון יש דם כחול.',ans:true,f:'נחושת במקום ברזל בדם - וזה צובע אותו כחול.'},
+    {t:'tf',e:'🥇',q:'זהב אמיתי הוא חומר אכיל.',ans:true,f:'יש לו אפילו מספר תוסף מזון: E175.'},
+    {t:'tf',e:'🍬',q:'מסטיק שנבלע נשאר בבטן שבע שנים.',ans:false,f:'לא מתעכל, אבל יוצא בדרך הרגילה תוך ימים.'},
+    {t:'tf',e:'🐠',q:'לדג זהב יש זיכרון של 3 שניות.',ans:false,f:'מחקרים מראים שהם זוכרים חודשים - כולל אימונים.'},
+    {t:'tf',e:'🐜',q:'נמלים בכלל לא ישנות.',ans:false,f:'הן ישנות מאות נמנומים קצרצרים ביום.'},
+    {t:'tf',e:'🍌',q:'בננה היא "ברי" (פרי יער) מבחינה בוטנית.',ans:true,f:'ותות שדה דווקא לא. הבוטניקה עושה דווקא.'},
+    {t:'tf',e:'🥤',q:'קוקה קולה הייתה פעם ירוקה.',ans:false,f:'תמיד הייתה חומה - אגדה אורבנית עקשנית.'},
+  ]},
+  guess:{name:'נחש אותי',color:'#FF4D9D',cards:[
+    {t:'guess',e:'🏝️',q:'איזה מאכל אחד {other} לוקח/ת לאי בודד?'},
+    {t:'guess',e:'🦸',q:'איזה כוח-על {other} היה/הייתה בוחר/ת?'},
+    {t:'guess',e:'💸',q:'מה הדבר הראשון ש{other} קונה עם מיליון שקל?'},
+    {t:'guess',e:'✈️',q:'לאיזו מדינה {other} הכי רוצה לטוס?'},
+    {t:'guess',e:'🎵',q:'איזה שיר {other} היה/הייתה שם/ה בלופ ליום שלם?'},
+    {t:'guess',e:'🦊',q:'אם {other} היה/הייתה חיה - איזו חיה?'},
+    {t:'guess',e:'🗣️',q:'על מה {other} מסוגל/ת לדבר שעה בלי להפסיק?'},
+    {t:'guess',e:'🍽️',q:'איזו ארוחת ערב {other} מזמין/ה אם מותר הכול?'},
+    {t:'guess',e:'🌅',q:'מה {other} עושה קודם בבוקר חופשי לגמרי?'},
+    {t:'guess',e:'😱',q:'ממה {other} הכי נבהל/ת: עכבישים, גבהים או חושך?'},
+  ]},
+  hypo:{name:'היפותטיות',color:'#B18CFF',cards:[
+    {t:'open',e:'💰',q:'קיבלתם מיליון שקל, אבל אסור לספר לאף אחד. מה עושים איתו?'},
+    {t:'open',e:'👻',q:'יום שלם שאתם בלתי נראים. לאן הולכים קודם?'},
+    {t:'open',e:'🍽️',q:'ארוחת ערב עם כל אדם בהיסטוריה. מי יושב מולכם?'},
+    {t:'open',e:'🏠',q:'אם הבית שלנו היה יכול לדבר, מה הדבר הראשון שהיה אומר?'},
+    {t:'open',e:'🐜',q:'התכווצתם לגודל של נמלה ליום אחד. מה עושים?'},
+    {t:'open',e:'⏸️',q:'כפתור שעוצר את הזמן לשעה ביום. מה עושים בשעה הזאת?'},
+    {t:'open',e:'🔮',q:'מותר לשאול את העתיד שאלה אחת בלבד. מה שואלים?'},
+    {t:'open',e:'🌍',q:'קמתם בבוקר ואתם היחידים בעולם. מה עושים ביום הראשון?'},
+    {t:'open',e:'🎉',q:'מוסיפים חג חדש ללוח השנה - מה חוגגים בו ואיך?'},
+    {t:'open',e:'🗑️',q:'מותר למחוק המצאה אחת מהעולם לתמיד. איזו?'},
+  ]},
+  who:{name:'מי מאיתנו',color:'#FF5470',cards:[
+    {t:'who',e:'📺',q:'מי מאיתנו יותר סביר שיירדם מול הטלוויזיה?'},
+    {t:'who',e:'📵',q:'מי מאיתנו ישרוד יותר זמן בלי טלפון?'},
+    {t:'who',e:'🍪',q:'מי מאיתנו יאכל משהו שנפל על הרצפה?'},
+    {t:'who',e:'😂',q:'מי מאיתנו צוחק ראשון בסרט מצחיק?'},
+    {t:'who',e:'🏝️',q:'מי מאיתנו היה שורד יותר על אי בודד?'},
+    {t:'who',e:'⭐',q:'מי מאיתנו יותר סביר להתפרסם?'},
+    {t:'who',e:'🐐',q:'מי מאיתנו יותר עקשן?'},
+    {t:'who',e:'🗝️',q:'מי מאיתנו שוכח איפה שם את המפתחות?'},
+    {t:'who',e:'💃',q:'מי מאיתנו מנצח בתחרות ריקודים?'},
+    {t:'who',e:'🐶',q:'מי מאיתנו יאמץ עוד חיה בלי לשאול אף אחד?'},
+  ]},
+};
+const SESSION_LEN=8;
+const CAT_LABEL={mc:'שאלת ידע',tf:'אמת או מיתוס?',guess:'נחש אותי',open:'שאלה פתוחה',who:'מי מאיתנו'};
+
+let baseSeed=0,me=0,names=['',''],total=[0,0];
+let curPack=null,sesDeck=[],idx=0,sesScores=[0,0],firstTurn=0,history=[],answered=false;
+let played={}; /* כמה סשנים שוחקו בכל נושא */
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600)}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function seededShuffle(arr,seed){const rnd=mulberry32(seed),a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function hashStr(s){let h=7;for(const ch of s)h=(h*31+ch.charCodeAt(0))|0;return Math.abs(h)}
+
+/* כוכבים ברקע */
+(function(){const st=$('stars');for(let i=0;i<45;i++){const s=document.createElement('i');
+  s.style.right=Math.random()*100+'%';s.style.top=Math.random()*100+'%';
+  s.style.animationDelay=(Math.random()*3)+'s';s.style.opacity=.1+Math.random()*.5;st.appendChild(s)}})();
+
+/* ---------- צלילים (WebAudio, בלי קבצים) ---------- */
+let AC=null;
+function ac(){if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();return AC}
+function tone(freq,dur,type,vol,when){const c=ac(),o=c.createOscillator(),g=c.createGain();
+  o.type=type;o.frequency.value=freq;o.connect(g);g.connect(c.destination);
+  const t=c.currentTime+(when||0);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  o.start(t);o.stop(t+dur)}
+function sndGood(){try{tone(660,.12,'sine',.18);tone(880,.14,'sine',.18,.09);tone(1320,.22,'sine',.15,.18)}catch(e){}}
+function sndBad(){try{tone(220,.22,'sawtooth',.12);tone(160,.3,'sawtooth',.1,.1)}catch(e){}}
+function sndTap(){try{tone(520,.06,'sine',.08)}catch(e){}}
+
+/* ---------- קונפטי ---------- */
+function confetti(){
+  const box=$('confetti'),colors=['#4DE3FF','#FF4D9D','#FFB347','#8CF19A','#B18CFF','#fff'];
+  for(let i=0;i<32;i++){
+    const p=document.createElement('i');
+    p.style.right=Math.random()*100+'%';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration=(0.9+Math.random()*1.1)+'s';
+    p.style.animationDelay=(Math.random()*.25)+'s';
+    p.style.width=p.style.height=(6+Math.random()*7)+'px';
+    if(Math.random()<.4)p.style.borderRadius='50%';
+    box.appendChild(p);
+    setTimeout(()=>p.remove(),2600);
+  }
+}
+
+/* ---------- הגדרה ---------- */
+function setup(){
+  const code=$('code').value.trim(),my=$('myname').value.trim(),other=$('othername').value.trim();
+  if(code.length!==4||isNaN(+code)){toast('קוד של 4 ספרות, תיאמו מראש');return}
+  if(!my||!other){toast('צריך את שני השמות');return}
+  if(my===other){toast('שני שמות זהים? מקורי, אבל לא');return}
+  names=[my,other].sort((a,b)=>a.localeCompare(b,'he'));
+  me=names.indexOf(my);
+  baseSeed=(parseInt(code,10)*7919+13)%2147483647;
+  total=[0,0];played={};
+  $('hometag').textContent='אות סנכרון: '+String(baseSeed%90+10)+' - חייב להיות זהה בשני הטלפונים';
+  renderHome();show('s-home');
+}
+
+/* ---------- מסך ראשי ---------- */
+function renderHome(){
+  $('hn0').textContent=names[0]+(me===0?' (את/ה)':'');
+  $('hn1').textContent=names[1]+(me===1?' (את/ה)':'');
+  $('hs0').textContent=total[0];$('hs1').textContent=total[1];
+  const sesCount=Object.values(played).reduce((a,b)=>a+b,0);
+  $('seslbl').textContent=sesCount===0?'בחרו נושא לסשן הראשון (8 קלפים לסשן)':'שוחקו '+sesCount+' סשנים - בוחרים את הבא';
+  const el=$('tiles');el.innerHTML='';
+  Object.keys(PACKS).forEach(k=>{
+    const p=PACKS[k],done=(played[k]||0)*SESSION_LEN,left=p.cards.length-done;
+    const d=document.createElement('div');
+    d.className='tile'+(left<=0?' done':'');
+    d.innerHTML='<div class="glow" style="background:radial-gradient(circle at 30% 20%,'+p.color+',transparent 70%)"></div>'
+      +(ICONS[k]||ICONS.hypo)
+      +'<div class="tname" style="color:'+p.color+'">'+p.name+'</div>'
+      +'<div class="tleft">'+(left>0?left+' קלפים נשארו':'סבב חדש מתחיל')+'</div>';
+    d.onclick=()=>startSession(k);
+    el.appendChild(d);
+  });
+}
+
+/* ---------- סשן ---------- */
+function startSession(k){
+  curPack=k;
+  const p=PACKS[k],cyc=played[k]||0;
+  const order=seededShuffle(p.cards.map((_,i)=>i),baseSeed+hashStr(k)+Math.floor(cyc*SESSION_LEN/p.cards.length)*991);
+  const start=(cyc*SESSION_LEN)%p.cards.length;
+  sesDeck=order.slice(start,start+SESSION_LEN);
+  if(sesDeck.length<SESSION_LEN)sesDeck=sesDeck.concat(order.slice(0,SESSION_LEN-sesDeck.length));
+  firstTurn=(baseSeed+cyc+hashStr(k))%2;
+  idx=0;sesScores=[0,0];history=[];
+  $('nm0').textContent=names[0];$('nm1').textContent=names[1];
+  show('s-game');render();
+}
+
+function curTurn(){return (firstTurn+idx)%2}
+function card(){return PACKS[curPack].cards[sesDeck[idx]]}
+
+function render(){
+  if(idx>=sesDeck.length){endSession();return}
+  answered=false;
+  const c=card(),turn=curTurn(),other=names[1-turn],p=PACKS[curPack];
+  const qc=$('qcard');
+  qc.classList.remove('shake','glowgood','glowbad');
+  qc.style.animation='none';qc.offsetHeight;qc.style.animation='';
+  $('cardcount').textContent=(idx+1)+'/'+sesDeck.length;
+  $('pbar').style.width=(idx/sesDeck.length*100)+'%';
+  $('sc0').textContent=sesScores[0];$('sc1').textContent=sesScores[1];
+  $('chip0').classList.toggle('turn',turn===0);
+  $('chip1').classList.toggle('turn',turn===1);
+  $('emoart').textContent=c.e||'❔';
+  const cat=$('cat');cat.textContent=CAT_LABEL[c.t];cat.style.background=p.color;
+  $('qtext').textContent=c.q.replace(/{other}/g,other);
+  $('fact').classList.remove('show');$('fact').textContent='';
+  $('qsub').textContent=
+    c.t==='mc'||c.t==='tf'? names[turn]+' עונה בקול - ואז שניכם מקישים על אותה תשובה.'
+    :c.t==='guess'? names[turn]+' מנחש/ת בקול, '+other+' חושף/ת את האמת.'
+    :c.t==='who'? 'סופרים עד 3 ומצביעים יחד על מישהו.'
+    :'אין תשובה נכונה. מי שעונה "לא יודע" שוטף כלים.';
+  $('turnline').innerHTML=turn===me?'התור <b>שלך</b>':'התור של <b>'+names[turn]+'</b>';
+
+  const opts=$('opts'),acts=$('acts');
+  opts.innerHTML='';acts.innerHTML='';acts.classList.remove('show');
+  opts.className='opts show'+(c.t==='tf'?' tf':'');
+
+  if(c.t==='mc'){
+    const order=seededShuffle([0,1,2],baseSeed+sesDeck[idx]*97+hashStr(curPack));
+    order.forEach(oi=>{
+      const b=document.createElement('button');
+      b.className='opt';b.textContent=c.o[oi];
+      b.onclick=()=>answerMC(b,oi===0);
+      opts.appendChild(b);
+    });
+  }else if(c.t==='tf'){
+    [['אמת ✓',true],['מיתוס ✗',false]].forEach(([lbl,val])=>{
+      const b=document.createElement('button');
+      b.className='opt';b.textContent=lbl;
+      b.onclick=()=>answerMC(b,val===c.ans);
+      opts.appendChild(b);
+    });
+  }else if(c.t==='guess'){
+    opts.classList.remove('show');
+    acts.appendChild(mkBtn('ניחוש נכון +1','btn btn-good',()=>manual(true)));
+    acts.appendChild(mkBtn('פספוס','btn btn-bad',()=>manual(false)));
+    acts.classList.add('show');
+  }else if(c.t==='who'){
+    opts.classList.remove('show');
+    acts.appendChild(mkBtn('הצבענו על אותו אחד +1','btn btn-good',()=>manual('both')));
+    acts.appendChild(mkBtn('חילוקי דעות','btn btn-bad',()=>manual(false)));
+    acts.classList.add('show');
+  }else{
+    opts.classList.remove('show');
+    acts.appendChild(mkBtn('דיברנו, הלאה','btn btn-next',()=>next()));
+    acts.classList.add('show');
+  }
+}
+
+function answerMC(btn,correct){
+  if(answered)return;answered=true;
+  sndTap();
+  const c=card(),qc=$('qcard');
+  [...$('opts').children].forEach(b=>{
+    const isCorrect=(c.t==='tf')
+      ? (b.textContent.startsWith('אמת')===c.ans)
+      : (b.textContent===c.o[0]);
+    if(isCorrect)b.classList.add('correct');
+    else if(b===btn)b.classList.add('wrong');
+    else b.classList.add('dim');
+    b.onclick=null;
+  });
+  history.push([...sesScores]);
+  if(correct){
+    sesScores[curTurn()]++;
+    $('sc'+curTurn()).textContent=sesScores[curTurn()];
+    $('sc'+curTurn()).classList.remove('pop');void $('sc'+curTurn()).offsetWidth;$('sc'+curTurn()).classList.add('pop');
+    qc.classList.add('glowgood');confetti();sndGood();
+  }else{
+    qc.classList.add('shake','glowbad');sndBad();
+  }
+  if(c.f){$('fact').textContent=c.f;$('fact').classList.add('show')}
+  const acts=$('acts');
+  acts.innerHTML='';
+  acts.appendChild(mkBtn(idx+1>=sesDeck.length?'לסיכום':'הקלף הבא','btn btn-next',()=>next(true)));
+  acts.classList.add('show');
+}
+
+function manual(kind){
+  if(answered)return;answered=true;
+  history.push([...sesScores]);
+  const qc=$('qcard');
+  if(kind==='both'){sesScores[0]++;sesScores[1]++;qc.classList.add('glowgood');confetti();sndGood()}
+  else if(kind===true){sesScores[curTurn()]++;qc.classList.add('glowgood');confetti();sndGood()}
+  else{qc.classList.add('shake');sndBad()}
+  $('sc0').textContent=sesScores[0];$('sc1').textContent=sesScores[1];
+  setTimeout(()=>next(true),700);
+}
+
+function next(skip){
+  if(!skip&&answered)return;
+  if(!answered)history.push([...sesScores]);
+  idx++;render();
+}
+
+function goBack(){
+  if(idx===0){toast('אנחנו כבר בקלף הראשון');return}
+  idx--;sesScores=history.pop()||[0,0];render();
+  toast('חזרנו קלף אחורה - תוודאו שהצד השני עשה אותו דבר');
+}
+
+let quitArm=0;
+function quitSession(){
+  if(Date.now()-quitArm<3000){quitArm=0;show('s-home');renderHome();return}
+  quitArm=Date.now();toast('הסשן לא יישמר - לחצו שוב על ⌂ לאישור');
+}
+let resetArm=0;
+function fullReset(){
+  if(Date.now()-resetArm<3000){location.reload();return}
+  resetArm=Date.now();toast('איפוס מלא של הכול - לחצו שוב לאישור');
+}
+
+function endSession(){
+  played[curPack]=(played[curPack]||0)+1;
+  total[0]+=sesScores[0];total[1]+=sesScores[1];
+  const w=sesScores[0]===sesScores[1]?null:(sesScores[0]>sesScores[1]?0:1);
+  $('sumemo').textContent=w===null?'🤝':'🏆';
+  $('sumtitle').textContent=w===null?'תיקו בסשן!':names[w]+' לוקח/ת את הסשן';
+  $('sumsub').textContent='נושא: '+PACKS[curPack].name+' - הניקוד המצטבר מחכה במסך הראשי.';
+  $('sn0').textContent=names[0];$('sn1').textContent=names[1];
+  $('ss0').textContent=total[0];$('ss1').textContent=total[1];
+  $('sp0').textContent='+'+sesScores[0]+' בסשן';
+  $('sp1').textContent='+'+sesScores[1]+' בסשן';
+  if(w!==null&&((w===0&&me===0)||(w===1&&me===1)))confetti();
+  show('s-sum');
+}
+
+/* ---------- חיווט כפתורים (בלי onclick ב-HTML) ---------- */
+function mkBtn(txt,cls,fn){const b=document.createElement('button');b.type='button';b.className=cls;b.textContent=txt;b.addEventListener('click',fn);return b}
+window.addEventListener('error',e=>{toast('שגיאה: '+(e.message||'לא ידועה'))});
+let uiWired=false;
+function wireUI(){
+  if(uiWired)return;uiWired=true;
+  $('btnSetup').addEventListener('click',setup);
+  $('btnReset').addEventListener('click',fullReset);
+  $('btnQuit').addEventListener('click',quitSession);
+  $('btnUndo').addEventListener('click',goBack);
+  $('btnSumNext').addEventListener('click',()=>{show('s-home');renderHome()});
+  $('btnSumHome').addEventListener('click',()=>{show('s-home');renderHome()});
+}
+/* הסקריפט בסוף ה-body - האלמנטים קיימים, מחווטים מיד. גיבוי על אירוע הטעינה למקרה קצה. */
+wireUI();
+document.addEventListener('DOMContentLoaded',wireUI);
+window.addEventListener('load',wireUI);
+(function(){const v=$('verbadge');if(v){v.textContent='גרסה 4 - מוכן ✓';v.style.color='#3EE08F'}})();
+</script>
+</body>
+</html>
