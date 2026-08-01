@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>השולחן</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0C11; --surface:#12151D; --raise:#181D28; --raise2:#1E2431;
+    --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.15);
+    --txt:#E9ECF2; --dim:#8A93A5; --dim2:#5C6575;
+    --gold:#C9A961; --ok:#5BC08C; --bad:#E0596B;
+    --teal:#4FB3A8; --indigo:#7B8FE8; --rose:#C97B92; --violet:#9084C9; --sky:#5F9FD0; --sage:#7FA88B;
+    --r:12px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Assistant',system-ui,sans-serif;color:var(--txt);min-height:100vh;overflow-x:hidden;
+    background:var(--bg);font-weight:400;-webkit-font-smoothing:antialiased;
+  }
+  /* רשת שרטוט עדינה */
+  body::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    background-size:34px 34px;
+  }
+  body::after{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(ellipse 90% 45% at 50% -8%, rgba(201,169,97,.07), transparent 70%);
+  }
+  .wrap{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:20px 18px 44px;min-height:100vh;display:flex;flex-direction:column}
+  .screen{display:none;flex:1;flex-direction:column}
+  .screen.active{display:flex}
+  .mono{font-family:'IBM Plex Mono',monospace}
+
+  /* ---------- לוגו ---------- */
+  .logo{text-align:center;margin-top:3vh}
+  .logo .mark{width:126px;height:38px;margin:0 auto 14px;display:block}
+  .logo h1{
+    font-weight:200;font-size:clamp(42px,12.5vw,64px);line-height:1;color:var(--txt);
+    letter-spacing:.14em;text-indent:.14em;
+  }
+  .logo .tag{
+    display:block;margin-top:13px;font-family:'IBM Plex Mono',monospace;font-size:10px;
+    font-weight:400;color:var(--dim2);letter-spacing:.34em;text-indent:.34em;
+  }
+  .lede{color:var(--dim);font-size:14px;font-weight:400;text-align:center;margin-top:20px;line-height:1.7}
+
+  h2.sec{font-size:17px;font-weight:700;color:var(--txt);letter-spacing:-.01em;margin-bottom:2px}
+  .sublab{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim2);letter-spacing:.1em;margin-bottom:12px}
+
+  /* ---------- שדות ---------- */
+  label{display:block;font-size:12px;color:var(--dim);font-weight:500;margin-bottom:6px}
+  input{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    padding:13px 14px;color:var(--txt);font-family:'Assistant';font-size:16px;font-weight:600;
+    outline:none;width:100%;text-align:center;transition:border-color .18s,background .18s
+  }
+  input::placeholder{color:var(--dim2);font-weight:400}
+  input:focus{border-color:var(--gold);background:var(--raise)}
+  input.code{font-family:'IBM Plex Mono',monospace;letter-spacing:.5em;text-indent:.5em;font-size:20px;font-weight:500}
+  .field{margin-bottom:13px}
+
+  /* ---------- כפתורים ---------- */
+  .btn{
+    border:none;border-radius:var(--r);padding:14px 20px;font-family:'Assistant';font-weight:700;
+    font-size:15.5px;cursor:pointer;width:100%;transition:opacity .16s,transform .1s,background .16s
+  }
+  .btn:active{transform:scale(.988)}
+  .btn-go{background:var(--gold);color:#15161A}
+  .btn-go:hover{background:#D7B972}
+  .btn-alt{background:transparent;color:var(--txt);border:1px solid var(--line2)}
+  .linkbtn{
+    background:none;border:none;color:var(--dim2);font-family:'Assistant';font-weight:500;
+    font-size:12.5px;cursor:pointer;padding:7px;transition:color .16s
+  }
+  .linkbtn:hover{color:var(--dim)}
+
+  /* ---------- הרכב ---------- */
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
+  .mode{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:15px 11px;
+    cursor:pointer;text-align:center;transition:border-color .2s,background .2s
+  }
+  .mode svg{width:30px;height:30px;margin-bottom:8px;opacity:.8}
+  .mode .mname{font-size:14.5px;font-weight:600;color:var(--txt)}
+  .mode .mdesc{font-size:11px;color:var(--dim2);font-weight:400;margin-top:2px}
+  .mode.on{border-color:var(--gold);background:var(--raise)}
+  .mode.on svg{opacity:1}
+
+  .totsrow{
+    display:flex;align-items:flex-start;gap:11px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--r);padding:13px 14px;cursor:pointer;transition:border-color .2s,background .2s
+  }
+  .totsrow .box{
+    width:19px;height:19px;flex-shrink:0;border:1.5px solid var(--line2);border-radius:5px;margin-top:1px;
+    transition:background .18s,border-color .18s;position:relative
+  }
+  .totsrow.on{border-color:var(--gold);background:var(--raise)}
+  .totsrow.on .box{background:var(--gold);border-color:var(--gold)}
+  .totsrow.on .box::after{
+    content:'';position:absolute;left:5.5px;top:2px;width:5px;height:10px;
+    border:solid #15161A;border-width:0 2px 2px 0;transform:rotate(42deg)
+  }
+  .totsrow .txt{font-size:14px;font-weight:600;color:var(--txt);line-height:1.35}
+  .totsrow .txt em{display:block;font-size:11.5px;font-weight:400;color:var(--dim2);font-style:normal;margin-top:3px}
+  .board.tight .pchip{padding:8px 4px}
+  .board.tight .pchip .pn{font-size:10px}
+  .board.tight .pchip .pv{font-size:19px}
+  .gbar .board.tight .pchip .pv{font-size:15px}
+  .gbar .board.tight .pchip .pn{font-size:9px}
+
+  /* ---------- לוח ניקוד ---------- */
+  .board{display:flex;gap:8px;margin:18px 0 14px}
+  .pchip{
+    flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    padding:11px 8px;text-align:center;transition:border-color .25s,background .25s
+  }
+  .pchip .pn{font-size:11.5px;font-weight:500;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pchip .pv{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:500;line-height:1.25;color:var(--txt)}
+  .pchip.you{border-color:rgba(79,179,168,.4)}
+  .pchip.you .pn{color:var(--teal)}
+  .pchip.turn{border-color:var(--gold);background:var(--raise)}
+  .pchip.turn .pn{color:var(--gold)}
+  .pchip.turn .pv{color:var(--gold)}
+  .pv.bump{animation:bump .5s ease-out}
+  @keyframes bump{35%{transform:scale(1.32);color:var(--ok)}}
+
+  /* ---------- חפיסה ---------- */
+  .setbar{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:7px}
+  .setbar button{
+    width:34px;height:34px;border-radius:9px;border:1px solid var(--line2);
+    background:transparent;color:var(--dim);font-size:17px;font-weight:500;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;transition:border-color .16s,color .16s
+  }
+  .setbar button:hover{border-color:var(--gold);color:var(--gold)}
+  .setbar .slab{font-size:12.5px;font-weight:500;color:var(--dim)}
+  .setbar .slab b{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--gold);margin-right:5px}
+  .synced{
+    text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim2);
+    letter-spacing:.06em;margin-bottom:20px
+  }
+
+  /* ---------- אריחים ---------- */
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .tile{
+    position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    padding:14px 13px 13px 13px;cursor:pointer;overflow:hidden;transition:border-color .18s,background .18s
+  }
+  .tile:hover{border-color:var(--line2);background:var(--raise)}
+  .tile:active{transform:scale(.99)}
+  .tile .edge{position:absolute;top:0;right:0;width:2px;height:100%}
+  .tile svg.tico{width:22px;height:22px;margin-bottom:11px;display:block}
+  .tile .tn{font-size:14.5px;font-weight:600;line-height:1.25;color:var(--txt)}
+  .tile .tl{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--dim2);margin-top:5px;letter-spacing:.02em}
+  .tile .flag{
+    position:absolute;top:12px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:8px;
+    color:var(--dim2);border:1px solid var(--line);padding:2px 5px;border-radius:4px;letter-spacing:.05em
+  }
+
+  /* ---------- סרגל משחק ---------- */
+  .gbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .icobtn{
+    width:36px;height:36px;flex-shrink:0;border-radius:9px;border:1px solid var(--line2);
+    background:transparent;color:var(--dim);font-size:14px;cursor:pointer;font-family:'Assistant';
+    transition:border-color .16s,color .16s
+  }
+  .icobtn:hover{border-color:var(--gold);color:var(--gold)}
+  .gbar .board{margin:0}
+  .gbar .pchip{padding:7px 6px}
+  .gbar .pchip .pv{font-size:17px}
+  .gbar .pchip .pn{font-size:10px}
+  .count{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:500;color:var(--dim2);white-space:nowrap;letter-spacing:.05em}
+
+  .rail{height:2px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:18px}
+  .rail i{display:block;height:100%;width:0;background:var(--gold);transition:width .4s ease}
+
+  /* ---------- קלף ---------- */
+  .arena{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .card{
+    background:var(--raise);border:1px solid var(--line);border-radius:16px;padding:22px 20px;
+    position:relative;animation:rise .38s cubic-bezier(.2,.8,.25,1);
+    box-shadow:0 20px 44px rgba(0,0,0,.5)
+  }
+  .card::before{
+    content:'';position:absolute;top:0;right:16px;left:16px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.13),transparent)
+  }
+  @keyframes rise{from{transform:translateY(14px);opacity:0}}
+  .card.wrong{animation:nope .4s}
+  @keyframes nope{22%{transform:translateX(-7px)}44%{transform:translateX(6px)}66%{transform:translateX(-4px)}88%{transform:translateX(2px)}}
+  .card.right{border-color:rgba(91,192,140,.45)}
+
+  .kicker{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:500;
+    letter-spacing:.16em;margin-bottom:15px;padding-bottom:6px;border-bottom:1px solid currentColor
+  }
+  .qq{font-size:clamp(19px,5vw,23px);font-weight:600;line-height:1.45;color:var(--txt);letter-spacing:-.01em}
+  .hint{margin-top:11px;font-size:12.5px;color:var(--dim2);font-weight:400;line-height:1.65}
+
+  /* איור - לוח תצוגה מואר */
+  .plate{
+    background:#EDEDE7;border-radius:10px;padding:14px;margin-bottom:18px;
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden
+  }
+  .plate::after{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(160deg,rgba(255,255,255,.5),transparent 40%)
+  }
+  .plate svg{width:100%;max-width:225px;height:145px;position:relative;z-index:1}
+  .press{animation:press .6s cubic-bezier(.2,.85,.25,1)}
+  @keyframes press{0%{opacity:0;transform:scale(.94)}100%{opacity:1;transform:none}}
+
+  .facts{
+    display:none;margin-top:15px;background:rgba(79,179,168,.08);
+    border:1px solid rgba(79,179,168,.22);border-radius:10px;
+    padding:12px 13px;font-size:13.5px;font-weight:400;color:#A8D8D0;line-height:1.6
+  }
+  .facts.on{display:block;animation:rise .3s}
+
+  /* ---------- תשובות ---------- */
+  .opts{margin-top:18px;display:none;flex-direction:column;gap:8px}
+  .opts.on{display:flex}
+  .opts.pair{flex-direction:row}
+  .opts.pair .opt{flex:1}
+  .opt{
+    background:var(--raise2);border:1px solid var(--line);border-radius:10px;padding:13px 14px;
+    font-family:'Assistant';font-size:15px;font-weight:500;color:var(--txt);cursor:pointer;
+    text-align:center;transition:border-color .16s,background .16s
+  }
+  .opt:hover{border-color:var(--line2)}
+  .opt:active{transform:scale(.99)}
+  .opt.yes{background:rgba(91,192,140,.13);border-color:var(--ok);color:#A9E6C4;font-weight:600}
+  .opt.no{background:rgba(224,89,107,.1);border-color:rgba(224,89,107,.55);color:#F0AAB3}
+  .opt.off{opacity:.3;pointer-events:none}
+
+  /* ---------- פעילות ומשימה ---------- */
+  .steps{margin-top:16px}
+  .steps .kit{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--dim);
+    border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:14px;letter-spacing:.02em
+  }
+  .steps ol{list-style:none;counter-reset:s}
+  .steps li{
+    counter-increment:s;position:relative;padding-right:28px;margin-bottom:11px;
+    font-size:14.5px;line-height:1.6;font-weight:400;color:#C6CCD8
+  }
+  .steps li::before{
+    content:counter(s);position:absolute;right:0;top:1px;font-family:'IBM Plex Mono',monospace;
+    font-size:11px;color:var(--gold);font-weight:500
+  }
+  .steps li::after{
+    content:'';position:absolute;right:9px;top:20px;bottom:-6px;width:1px;background:var(--line)
+  }
+  .steps li:last-child::after{display:none}
+  .picks{margin-top:16px}
+  .picks .pt{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--dim2);letter-spacing:.14em;margin-bottom:10px}
+  .picks .row{
+    border-right:2px solid var(--line2);padding:3px 11px 3px 0;margin-bottom:9px;
+    font-size:14px;font-weight:400;line-height:1.55;color:#C6CCD8
+  }
+
+  .acts{margin-top:18px;display:none;gap:8px}
+  .acts.on{display:flex}
+  .acts .btn{font-size:14px;padding:12px 8px}
+  .btn-yes{background:rgba(91,192,140,.15);color:#A9E6C4;border:1px solid rgba(91,192,140,.4)}
+  .btn-no{background:transparent;color:var(--dim);border:1px solid var(--line)}
+  .btn-nx{background:var(--gold);color:#15161A}
+
+  .whose{text-align:center;margin-top:14px;font-size:12.5px;color:var(--dim2);font-weight:400;min-height:19px}
+  .whose b{color:var(--gold);font-weight:600}
+  .undo{display:flex;justify-content:center;margin-top:6px}
+
+  /* ---------- סיכום ---------- */
+  .fin{text-align:center;margin-top:9vh}
+  .fin .em{font-size:34px;opacity:.9}
+  .fin h3{font-size:clamp(30px,8.5vw,44px);font-weight:200;line-height:1.15;margin-top:16px;color:var(--txt);letter-spacing:.02em}
+  .fin p{color:var(--dim);font-weight:400;margin-top:14px;font-size:14px;line-height:1.7;max-width:330px;margin-inline:auto}
+  .fin .board{margin-top:34px}
+  .fin .pchip{padding:16px 10px}
+  .fin .pchip .pv{font-size:32px}
+  .finbtns{display:flex;flex-direction:column;gap:9px;margin-top:30px}
+
+  /* ---------- מערכת ---------- */
+  .toast{
+    position:fixed;bottom:24px;right:50%;transform:translateX(50%);background:var(--raise2);
+    border:1px solid var(--line2);color:var(--txt);font-weight:500;font-size:13px;
+    padding:11px 18px;border-radius:10px;opacity:0;transition:opacity .26s;
+    pointer-events:none;z-index:99;max-width:88vw;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.5)
+  }
+  .toast.on{opacity:1}
+  .conf{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+  .conf i{position:absolute;top:-12px;width:5px;height:5px;border-radius:50%;animation:drop linear forwards}
+  @keyframes drop{to{transform:translateY(106vh);opacity:0}}
+
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ הגדרה ============ -->
+<div class="screen active" id="s-setup">
+  <div class="logo">
+    <svg class="mark" viewBox="0 0 132 40" fill="none"><circle cx="42" cy="17" r="6.5" stroke="#4FB3A8" stroke-width="1.6"/><rect x="59" y="10.5" width="13" height="13" rx="2.5" stroke="#C9A961" stroke-width="1.6"/><path d="M89 10.5l7 13H82z" stroke="#C97B92" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 28.5h116" stroke="rgba(255,255,255,.3)" stroke-width="1.4" stroke-linecap="round"/><path d="M22 29v8M110 29v8" stroke="rgba(255,255,255,.14)" stroke-width="1.4" stroke-linecap="round"/></svg>
+    <h1>השולחן</h1>
+    <span class="tag">משחקים · לומדים · עושים</span>
+  </div>
+  <div class="lede">חפיסה אחת, כמה טלפונים.<br>אותו קוד מייצר את אותם קלפים בדיוק.</div>
+
+  <div style="margin-top:24px">
+    <h2 class="sec">מי סביב השולחן?</h2>
+    <div class="sublab">הבחירה קובעת אילו קלפים ייכנסו לחפיסה</div>
+    <div class="modes" id="modes"></div>
+
+    <div class="field">
+      <label>קוד משותף - אותו קוד בכל הטלפונים</label>
+      <input id="code" class="code" maxlength="4" inputmode="numeric" placeholder="4 ספרות">
+    </div>
+    <div class="field"><label>השם שלך</label><input id="p0" maxlength="12" placeholder="השם שלך"></div>
+    <div class="field"><label>שחקן/ית שני/ה</label><input id="p1" maxlength="12" placeholder="שם"></div>
+    <div class="field" id="f2" style="display:none"><label>שחקן/ית שלישי/ת</label><input id="p2" maxlength="12" placeholder="שם"></div>
+    <div class="field" id="f3" style="display:none"><label>רביעי/ת - לא חובה</label><input id="p3" maxlength="12" placeholder="אפשר להשאיר ריק"></div>
+    <div class="field" id="f4" style="display:none"><label>חמישי/ת - לא חובה</label><input id="p4" maxlength="12" placeholder="אפשר להשאיר ריק"></div>
+    <div class="field" id="ftots" style="display:none">
+      <div id="totsBox" class="totsrow">
+        <span class="box"></span>
+        <span class="txt">משחקים עם הקטנים<em>מתאים את הפעילויות והשאלות לגיל הצעיר</em></span>
+      </div>
+    </div>
+
+    <button type="button" id="btnGo" class="btn btn-go">פותחים את השולחן</button>
+    <div style="text-align:center"><button type="button" id="btnHow" class="linkbtn">איך זה עובד?</button></div>
+    <div id="howbox" style="display:none;background:var(--ink2);border-radius:11px;padding:12px 14px;font-size:12.5px;line-height:1.75;color:#B9CDD6;margin-top:4px">
+      אין חיבור בין הטלפונים - אותו קוד פשוט מייצר את אותה חפיסה בדיוק בשני המכשירים.
+      <b style="color:var(--aqua)">בודקים שמספר הסנכרון זהה</b> ומתקדמים יחד: מי שבתורו עונה בקול, וכולם מקישים על אותה תשובה.
+      בקטגוריות בלי ניקוד פשוט מדברים ולוחצים "הלאה".
+    </div>
+  </div>
+  <div id="ver" class="mono" style="text-align:center;font-size:10px;letter-spacing:.1em;color:#C97B92;margin-top:20px">גרסה 9 - אם זה אדום, הקוד לא נטען</div>
+</div>
+
+<!-- ============ בית ============ -->
+<div class="screen" id="s-home">
+  <div class="logo" style="margin-top:0"><svg class="mark" viewBox="0 0 132 40" fill="none" style="width:88px;height:27px;margin-bottom:9px"><circle cx="42" cy="17" r="6.5" stroke="#4FB3A8" stroke-width="1.8"/><rect x="59" y="10.5" width="13" height="13" rx="2.5" stroke="#C9A961" stroke-width="1.8"/><path d="M89 10.5l7 13H82z" stroke="#C97B92" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 28.5h116" stroke="rgba(255,255,255,.3)" stroke-width="1.6" stroke-linecap="round"/><path d="M22 29v8M110 29v8" stroke="rgba(255,255,255,.14)" stroke-width="1.6" stroke-linecap="round"/></svg><h1 style="font-size:clamp(28px,8vw,38px)">השולחן</h1></div>
+  <div class="board" id="board"></div>
+  <div class="setbar">
+    <button type="button" id="setUp">+</button>
+    <span class="slab">חפיסה <b id="setNo">1</b></span>
+    <button type="button" id="setDown">−</button>
+  </div>
+  <div class="synced" id="synced"></div>
+  <h2 class="sec">מה פותחים?</h2>
+  <div class="sublab" id="homelab"></div>
+  <div class="tiles" id="tiles"></div>
+  <div style="display:flex;justify-content:center;gap:14px;margin-top:14px">
+    <button type="button" id="btnMode" class="linkbtn">שינוי הרכב</button>
+    <button type="button" id="btnWipe" class="linkbtn">איפוס ניקוד</button>
+  </div>
+</div>
+
+<!-- ============ משחק ============ -->
+<div class="screen" id="s-play">
+  <div class="gbar">
+    <button type="button" id="btnHome" class="icobtn">⌂</button>
+    <div class="board" id="gboard" style="margin:0;flex:1"></div>
+    <span class="count" id="count">1/8</span>
+  </div>
+  <div class="rail"><i id="rail"></i></div>
+  <div class="arena">
+    <div class="card" id="card">
+      <div class="plate" id="plate" style="display:none"></div>
+      <span class="kicker" id="kicker"></span>
+      <div class="qq" id="qq"></div>
+      <div class="hint" id="hint"></div>
+      <div class="steps" id="steps" style="display:none"></div>
+      <div class="picks" id="picks" style="display:none"></div>
+      <div class="facts" id="facts"></div>
+      <div class="opts" id="opts"></div>
+      <div class="acts" id="acts"></div>
+    </div>
+    <div class="whose" id="whose"></div>
+    <div class="undo"><button type="button" id="btnBack" class="linkbtn">קלף אחורה</button></div>
+  </div>
+</div>
+
+<!-- ============ סיכום ============ -->
+<div class="screen" id="s-done">
+  <div class="fin">
+    <div class="em" id="finEm">🏆</div>
+    <h3 id="finT"></h3>
+    <p id="finP"></p>
+    <div class="board" id="finBoard"></div>
+  </div>
+  <div class="finbtns">
+    <button type="button" id="btnAgain" class="btn btn-go">קטגוריה נוספת</button>
+    <button type="button" id="btnBackHome" class="btn btn-alt">לשולחן</button>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+<div class="conf" id="conf"></div>
+
+<script>
+/* =======================================================
+   השולחן - פלטפורמה משפחתית
+   קלפים דטרמיניסטיים: אותו קוד + אותה חפיסה = אותו סדר
+   ======================================================= */
+
+/* ---------- אייקוני קטגוריות ---------- */
+const I={
+sci:'<svg class="tico" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="4" fill="#4FB3A8"/><ellipse cx="24" cy="24" rx="18" ry="7.5" stroke="#4FB3A8" stroke-width="2.6"/><ellipse cx="24" cy="24" rx="18" ry="7.5" stroke="#4FB3A8" stroke-width="2.6" transform="rotate(60 24 24)"/><ellipse cx="24" cy="24" rx="18" ry="7.5" stroke="#4FB3A8" stroke-width="2.6" transform="rotate(120 24 24)"/></svg>',
+triv:'<svg class="tico" viewBox="0 0 48 48" fill="none"><path d="M15 8h18v6c0 7-4 11-9 11s-9-4-9-11V8z" fill="#C9A961"/><path d="M15 11h-5c0 5 2 8 6 10M33 11h5c0 5-2 8-6 10" stroke="#C9A961" stroke-width="2.4"/><rect x="21" y="25" width="6" height="6" fill="#9C7F3E"/><rect x="15" y="31" width="18" height="4" rx="1.5" fill="#C9A961"/><rect x="12" y="36" width="24" height="4" rx="1.5" fill="#9C7F3E"/></svg>',
+eye:'<svg class="tico" viewBox="0 0 48 48" fill="none"><path d="M4 24s7.5-12 20-12 20 12 20 12-7.5 12-20 12S4 24 4 24z" stroke="#7FA88B" stroke-width="2.8" stroke-linejoin="round"/><circle cx="24" cy="24" r="6.5" fill="#7FA88B"/><circle cx="26.5" cy="21.5" r="2.2" fill="#E9E7DA"/></svg>',
+myth:'<svg class="tico" viewBox="0 0 48 48" fill="none"><path d="M8 23l8 8 18-18" stroke="#7FA88B" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 30l10 10M40 30L30 40" stroke="#C97B92" stroke-width="4.5" stroke-linecap="round"/></svg>',
+guess:'<svg class="tico" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="19" r="11" stroke="#C97B92" stroke-width="2.8"/><path d="M19 34h10M21 39h6" stroke="#C97B92" stroke-width="2.8" stroke-linecap="round"/><path d="M20 17c.5-2.5 3-4 5.5-3.2" stroke="#C97B92" stroke-width="2.4" stroke-linecap="round"/><path d="M24 4v-.5M37 19h1M9 19h1M33 9l1-1M15 9l-1-1" stroke="#C97B92" stroke-width="2.4" stroke-linecap="round"/></svg>',
+hypo:'<svg class="tico" viewBox="0 0 48 48" fill="none"><path d="M24 6c-7 0-12 5-12 11 0 5 3 7 4 11h16c1-4 4-6 4-11 0-6-5-11-12-11z" stroke="#9084C9" stroke-width="2.8" stroke-linejoin="round"/><path d="M18 34h12M20 39h8" stroke="#9084C9" stroke-width="2.8" stroke-linecap="round"/><path d="M24 28v-7M21 24l3-3 3 3" stroke="#9084C9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+who:'<svg class="tico" viewBox="0 0 48 48" fill="none"><circle cx="17" cy="16" r="6.5" stroke="#5F9FD0" stroke-width="2.8"/><path d="M6 36c0-6.5 5-10.5 11-10.5S28 29.5 28 36" stroke="#5F9FD0" stroke-width="2.8" stroke-linecap="round"/><circle cx="34" cy="19" r="5" stroke="#5F9FD0" stroke-width="2.4"/><path d="M26 36c.5-5.5 4-8.5 8-8.5s7.5 3 8 8.5" stroke="#5F9FD0" stroke-width="2.4" stroke-linecap="round"/></svg>',
+fam:'<svg class="tico" viewBox="0 0 48 48" fill="none"><path d="M24 40S8 30 8 19.5C8 13.5 12.5 9 18 9c3.5 0 5.5 2 6 3 .5-1 2.5-3 6-3 5.5 0 10 4.5 10 10.5C40 30 24 40 24 40z" fill="#C97B92"/><circle cx="17" cy="19" r="2.6" fill="#E9E7DA"/><circle cx="31" cy="19" r="2.6" fill="#E9E7DA"/><circle cx="24" cy="25" r="2.6" fill="#E9E7DA"/></svg>',
+act:'<svg class="tico" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="17" stroke="#C9A961" stroke-width="2.8"/><path d="M24 12v12l8 5" stroke="#C9A961" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="24" r="2.6" fill="#C9A961"/></svg>',
+mus:'<svg class="tico" viewBox="0 0 48 48" fill="none"><path d="M6 22v4M13 16v16M20 8v32M27 14v20M34 19v10M41 23v2" stroke="#7B8FE8" stroke-width="3.4" stroke-linecap="round"/></svg>',
+mis:'<svg class="tico" viewBox="0 0 48 48" fill="none"><path d="M12 6v36" stroke="#4FB3A8" stroke-width="3.2" stroke-linecap="round"/><path d="M12 8h22l-4 6 4 6H12z" fill="#4FB3A8"/></svg>'
+};
+
+/* ---------- איורים לקלפי "עין חדה" ---------- */
+const ART={
+yacht:'<svg viewBox="0 0 200 130"><path d="M0 96h200v10H0z" fill="#5F9FD0"/><path d="M0 106h200v8H0z" fill="#4A7FA8"/><path d="M28 74h140l-16 22H44z" fill="#E9E7DA" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/><path d="M52 74V58h68l12 16z" fill="#F7F5EC" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/><rect x="62" y="62" width="13" height="8" fill="#4FB3A8"/><rect x="82" y="62" width="13" height="8" fill="#4FB3A8"/><rect x="102" y="62" width="13" height="8" fill="#4FB3A8"/><path d="M120 58V44h4v14" fill="#14262F"/><path d="M124 44h14v7h-14z" fill="#C97B92"/></svg>',
+sail:'<svg viewBox="0 0 200 130"><path d="M0 96h200v10H0z" fill="#5F9FD0"/><path d="M0 106h200v8H0z" fill="#4A7FA8"/><path d="M98 22v70" stroke="#14262F" stroke-width="3.5"/><path d="M94 88V30l-40 58z" fill="#F7F5EC" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/><path d="M104 88V34l34 54z" fill="#C97B92" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/><path d="M40 90h124l-14 14H54z" fill="#E9E7DA" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/></svg>',
+cargo:'<svg viewBox="0 0 200 130"><path d="M0 98h200v10H0z" fill="#5F9FD0"/><path d="M0 108h200v8H0z" fill="#4A7FA8"/><path d="M16 78h168l-14 22H30z" fill="#14262F"/><rect x="34" y="58" width="22" height="18" fill="#C97B92" stroke="#14262F" stroke-width="2"/><rect x="58" y="58" width="22" height="18" fill="#C9A961" stroke="#14262F" stroke-width="2"/><rect x="82" y="58" width="22" height="18" fill="#4FB3A8" stroke="#14262F" stroke-width="2"/><rect x="46" y="38" width="22" height="18" fill="#7FA88B" stroke="#14262F" stroke-width="2"/><rect x="70" y="38" width="22" height="18" fill="#C97B92" stroke="#14262F" stroke-width="2"/><rect x="130" y="46" width="34" height="30" fill="#E9E7DA" stroke="#14262F" stroke-width="2"/><rect x="138" y="54" width="8" height="7" fill="#4FB3A8"/><rect x="150" y="54" width="8" height="7" fill="#4FB3A8"/></svg>',
+ydog:'<svg viewBox="0 0 200 130"><path d="M16 116h168" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><path d="M110 30c-4-3-9-2-12 2L56 92c-3 5-2 10 2 13s10 2 13-3l24-36 22 34c3 5 9 6 13 3s5-9 2-13z" fill="#7C6E8C" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M62 100l-10 12M132 100l8 12" stroke="#7C6E8C" stroke-width="11" stroke-linecap="round"/><circle cx="112" cy="26" r="12" fill="#7C6E8C" stroke="#2A2318" stroke-width="2.5"/><path d="M50 110h16M136 110h16" stroke="#2A2318" stroke-width="5" stroke-linecap="round"/><path d="M108 46q6 6 14 2" stroke="#2A2318" stroke-width="2" fill="none" opacity=".5"/></svg>',
+ywarrior:'<svg viewBox="0 0 200 130"><path d="M16 118h168" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><circle cx="98" cy="24" r="12" fill="#C9A961" stroke="#2A2318" stroke-width="2.5"/><path d="M92 36c-6 1-9 6-9 12v26c0 5 4 8 9 8h11c5 0 9-3 9-8V48c0-6-4-11-9-12z" fill="#C9A961" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M26 50h148" stroke="#C9A961" stroke-width="9" stroke-linecap="round"/><path d="M104 78l40 16v20" stroke="#C9A961" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M92 78L36 112" stroke="#C9A961" stroke-width="13" stroke-linecap="round"/><path d="M132 114h24M22 112h24" stroke="#2A2318" stroke-width="5.5" stroke-linecap="round"/><path d="M116 24h22" stroke="#2A2318" stroke-width="2" opacity=".4" stroke-dasharray="3 4"/></svg>',
+ytree:'<svg viewBox="0 0 200 130"><path d="M16 118h168" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><path d="M100 6v14" stroke="#7FA88B" stroke-width="7" stroke-linecap="round"/><path d="M100 20l-14-8M100 20l14-8" stroke="#7FA88B" stroke-width="9" stroke-linecap="round"/><path d="M86 12l-8 8M114 12l8 8" stroke="#7FA88B" stroke-width="8" stroke-linecap="round"/><circle cx="100" cy="40" r="12" fill="#7FA88B" stroke="#2A2318" stroke-width="2.5"/><path d="M94 52c-6 1-9 6-9 12v20c0 5 4 8 9 8h12c5 0 9-3 9-8V64c0-6-4-11-9-12z" fill="#7FA88B" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M100 92v22" stroke="#7FA88B" stroke-width="12" stroke-linecap="round"/><path d="M100 92l-22 6 18 8" stroke="#7FA88B" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M88 114h24" stroke="#2A2318" stroke-width="5.5" stroke-linecap="round"/></svg>',
+catcalm:'<svg viewBox="0 0 200 130"><path d="M30 118h140" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><path d="M118 116c14-2 24-6 24-14 0-7-8-11-16-9-6 2-8 7-5 9 3 2 7 0 6-3" fill="none" stroke="#9C8468" stroke-width="9" stroke-linecap="round"/><path d="M76 116c-6-14-8-30-8-42 0-20 10-32 26-32s26 12 26 32c0 12-2 28-8 42z" fill="#9C8468" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M94 24c-10 2-17 10-17 20 0 12 8 20 17 20s17-8 17-20c0-10-7-18-17-20z" fill="#9C8468" stroke="#2A2318" stroke-width="2.5"/><path d="M79 30l-4-16 15 7zM109 30l4-16-15 7z" fill="#9C8468" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M81 16l-2-8 8 4zM107 16l2-8-8 4z" fill="#C98B8B"/><path d="M85 40h5M98 40h5" stroke="#2A2318" stroke-width="3.5" stroke-linecap="round"/><path d="M94 47l-3 3h6z" fill="#C98B8B"/><path d="M91 52q3 3 6 0" stroke="#2A2318" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M76 42h-14M76 46h-13M112 42h14M112 46h13" stroke="#2A2318" stroke-width="1.3" stroke-linecap="round"/><path d="M80 116v-10h9v10zM99 116v-10h9v10z" fill="#9C8468" stroke="#2A2318" stroke-width="2" stroke-linejoin="round"/></svg>',
+catscared:'<svg viewBox="0 0 200 130"><path d="M20 118h160" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><path d="M138 74c10-8 18-22 16-38-1-8-8-10-11-4-3 5-1 10 3 9" fill="none" stroke="#7C6E8C" stroke-width="15" stroke-linecap="round"/><path d="M132 40c3-4 8-6 11-3M148 44c4-2 8-1 10 2M136 56c4-3 9-3 12 0" stroke="#7C6E8C" stroke-width="4" stroke-linecap="round"/><path d="M56 106c0-34 16-50 44-50s40 16 40 46c0 4-1 6-4 6-4 0-5-3-5-7 0-22-12-34-31-34s-33 14-33 40c0 4-2 6-6 6s-5-3-5-7z" fill="#7C6E8C" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M60 96v20M74 100v16M120 98v18M134 94v22" stroke="#7C6E8C" stroke-width="8" stroke-linecap="round"/><circle cx="52" cy="82" r="17" fill="#7C6E8C" stroke="#2A2318" stroke-width="2.5"/><path d="M40 72l-6-14 15 5zM64 70l8-13 3 15z" fill="#7C6E8C" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><circle cx="46" cy="80" r="5" fill="#2A2318"/><circle cx="60" cy="80" r="5" fill="#2A2318"/><circle cx="47.5" cy="78" r="1.7" fill="#fff"/><circle cx="61.5" cy="78" r="1.7" fill="#fff"/><path d="M52 88l-3 3h6z" fill="#C98B8B"/><path d="M46 93q3-3 6 0 3 3 6 0" stroke="#2A2318" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M38 86H24M38 90H26M66 86h14M66 90h12" stroke="#2A2318" stroke-width="1.3" stroke-linecap="round"/></svg>',
+cathunt:'<svg viewBox="0 0 200 130"><path d="M20 116h160" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><path d="M148 82c14 0 24-3 26-10" fill="none" stroke="#5F8C86" stroke-width="8" stroke-linecap="round"/><path d="M64 88c0-14 10-22 30-22h30c14 0 22 6 22 16 0 8-6 14-16 14H82c-11 0-18-3-18-8z" fill="#5F8C86" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M132 68c8-6 14-2 14 8" fill="#5F8C86" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M78 96v16M92 96v16M124 96v16M138 94v18" stroke="#5F8C86" stroke-width="7" stroke-linecap="round"/><circle cx="52" cy="86" r="16" fill="#5F8C86" stroke="#2A2318" stroke-width="2.5"/><path d="M40 76l-3-14 14 6zM64 76l3-14-14 6z" fill="#5F8C86" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M44 84h6M56 84h6" stroke="#2A2318" stroke-width="4" stroke-linecap="round"/><path d="M52 92l-3 3h6z" fill="#C98B8B"/><path d="M38 88H24M38 92H26M66 88h14M66 92h12" stroke="#2A2318" stroke-width="1.3" stroke-linecap="round"/></svg>',
+layup:'<svg viewBox="0 0 200 130"><path d="M10 116h180" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><rect x="150" y="10" width="40" height="30" fill="none" stroke="#8A8578" stroke-width="3"/><rect x="162" y="26" width="16" height="12" fill="none" stroke="#C9756B" stroke-width="3"/><path d="M158 40h22" stroke="#C9756B" stroke-width="3.5" stroke-linecap="round"/><path d="M160 42l3 10h14l3-10" fill="none" stroke="#C9C4B4" stroke-width="2"/><circle cx="140" cy="26" r="11" fill="#C9A961" stroke="#2A2318" stroke-width="2"/><path d="M129 26h22M140 15v22" stroke="#2A2318" stroke-width="1.4"/><circle cx="86" cy="34" r="10" fill="#4A5C7A" stroke="#2A2318" stroke-width="2"/><path d="M86 44c-7 0-11 5-11 12v14c0 4 3 6 6 6h12c4 0 6-3 6-7V56c0-7-5-12-13-12z" fill="#4A5C7A" stroke="#2A2318" stroke-width="2" stroke-linejoin="round"/><path d="M92 50l22-16 14-6" stroke="#4A5C7A" stroke-width="8" stroke-linecap="round" fill="none"/><path d="M80 54L62 66l-4 14" stroke="#4A5C7A" stroke-width="7.5" stroke-linecap="round" fill="none"/><path d="M94 74l16 4 4 20" stroke="#4A5C7A" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M82 76l-10 20-14 16" stroke="#4A5C7A" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M114 98l8 4M58 112h-12" stroke="#2A2318" stroke-width="5" stroke-linecap="round"/></svg>',
+dunk:'<svg viewBox="0 0 200 130"><path d="M10 120h180" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><rect x="146" y="4" width="44" height="32" fill="none" stroke="#8A8578" stroke-width="3"/><rect x="158" y="20" width="18" height="14" fill="none" stroke="#C9756B" stroke-width="3"/><path d="M152 36h26" stroke="#C9756B" stroke-width="4" stroke-linecap="round"/><path d="M154 38l4 12h18l4-12" fill="none" stroke="#C9C4B4" stroke-width="2"/><circle cx="153" cy="30" r="11" fill="#C9A961" stroke="#2A2318" stroke-width="2"/><circle cx="92" cy="40" r="10" fill="#6B5A7A" stroke="#2A2318" stroke-width="2"/><path d="M92 50c-8 0-12 6-12 13v13c0 4 3 6 7 6h11c4 0 6-3 6-7V62c0-7-5-12-12-12z" fill="#6B5A7A" stroke="#2A2318" stroke-width="2" stroke-linejoin="round"/><path d="M100 54l24-10 20-8" stroke="#6B5A7A" stroke-width="8" stroke-linecap="round" fill="none"/><path d="M84 56L62 52l-14 6" stroke="#6B5A7A" stroke-width="7.5" stroke-linecap="round" fill="none"/><path d="M96 80l14 12-2 16" stroke="#6B5A7A" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M84 80L64 88l-8 14" stroke="#6B5A7A" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M108 108l8 4M56 102l-8 6" stroke="#2A2318" stroke-width="5" stroke-linecap="round"/></svg>',
+freethrow:'<svg viewBox="0 0 200 130"><path d="M10 116h180" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><path d="M46 116h34" stroke="#C9756B" stroke-width="4" stroke-linecap="round"/><rect x="150" y="14" width="40" height="30" fill="none" stroke="#8A8578" stroke-width="3"/><rect x="162" y="30" width="16" height="12" fill="none" stroke="#C9756B" stroke-width="3"/><path d="M158 44h22" stroke="#C9756B" stroke-width="3.5" stroke-linecap="round"/><path d="M160 46l3 10h14l3-10" fill="none" stroke="#C9C4B4" stroke-width="2"/><path d="M68 32C96 4 148 12 168 42" stroke="#5F8C86" stroke-width="2" stroke-dasharray="5 6" fill="none"/><circle cx="66" cy="26" r="11" fill="#C9A961" stroke="#2A2318" stroke-width="2"/><path d="M55 26h22M66 15v22" stroke="#2A2318" stroke-width="1.4"/><circle cx="64" cy="50" r="10" fill="#4A7A6B" stroke="#2A2318" stroke-width="2"/><path d="M64 60c-8 0-12 5-12 12v16c0 4 3 6 6 6h12c4 0 6-3 6-6V72c0-7-4-12-12-12z" fill="#4A7A6B" stroke="#2A2318" stroke-width="2" stroke-linejoin="round"/><path d="M56 64L48 46l10-12" stroke="#4A7A6B" stroke-width="7.5" stroke-linecap="round" fill="none"/><path d="M74 64l8-18-8-12" stroke="#4A7A6B" stroke-width="7.5" stroke-linecap="round" fill="none"/><path d="M60 92v22M70 92v22" stroke="#4A7A6B" stroke-width="9" stroke-linecap="round"/><path d="M56 114h10M66 114h10" stroke="#2A2318" stroke-width="5" stroke-linecap="round"/></svg>',
+mooncres:'<svg viewBox="0 0 200 130"><circle cx="100" cy="64" r="44" fill="#1E3F4F"/><path d="M100 20a44 44 0 000 88 32 44 0 010-88z" fill="#C9A961"/></svg>',
+moonhalf:'<svg viewBox="0 0 200 130"><circle cx="100" cy="64" r="44" fill="#1E3F4F"/><path d="M100 20a44 44 0 010 88z" fill="#C9A961"/></svg>',
+moonfull:'<svg viewBox="0 0 200 130"><circle cx="100" cy="64" r="44" fill="#C9A961"/><circle cx="84" cy="50" r="8" fill="#A8894A"/><circle cx="114" cy="72" r="11" fill="#A8894A"/><circle cx="92" cy="84" r="6" fill="#A8894A"/></svg>',
+cumulus:'<svg viewBox="0 0 200 130"><path d="M0 106h200" stroke="#C3BFAC" stroke-width="3"/><circle cx="72" cy="62" r="26" fill="#F7F5EC" stroke="#14262F" stroke-width="2.5"/><circle cx="106" cy="52" r="32" fill="#F7F5EC" stroke="#14262F" stroke-width="2.5"/><circle cx="136" cy="66" r="22" fill="#F7F5EC" stroke="#14262F" stroke-width="2.5"/><path d="M60 86h84" stroke="#F7F5EC" stroke-width="24" stroke-linecap="round"/><path d="M50 86h100" stroke="#14262F" stroke-width="2.5" stroke-linecap="round"/></svg>',
+cirrus:'<svg viewBox="0 0 200 130"><path d="M0 110h200" stroke="#C3BFAC" stroke-width="3"/><path d="M30 40q30-12 56-4t54-2" stroke="#F7F5EC" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M44 58q28-10 52-3t50 0" stroke="#F7F5EC" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M56 74q26-8 46-2t40 1" stroke="#F7F5EC" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="160" cy="26" r="13" fill="#C9A961"/></svg>',
+storm:'<svg viewBox="0 0 200 130"><circle cx="76" cy="44" r="22" fill="#7C8899"/><circle cx="112" cy="36" r="28" fill="#7C8899"/><circle cx="142" cy="48" r="19" fill="#7C8899"/><path d="M56 62h96v10H56z" fill="#7C8899"/><path d="M96 74l-14 22h14l-10 22 28-30h-14l10-14z" fill="#C9A961"/><path d="M62 82l-8 16M140 80l-8 18" stroke="#5F9FD0" stroke-width="4" stroke-linecap="round"/></svg>',
+violin:'<svg viewBox="0 0 200 130"><path d="M100 8c-6 0-9 4-9 8 0 3 2 5 4 5 3 0 4-2 4-4 0-2-2-3-3-2" fill="none" stroke="#4A3A22" stroke-width="4" stroke-linecap="round"/><rect x="94" y="16" width="12" height="34" rx="2" fill="#3A2C18"/><path d="M84 54c-8 2-13 9-13 17 0 6 4 10 5 15-6 4-10 12-10 21 0 14 15 21 34 21s34-7 34-21c0-9-4-17-10-21 1-5 5-9 5-15 0-8-5-15-13-17-9-2-23-2-32 0z" fill="#B8763F" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M84 74c-3 0-4 3-4 6s2 5 2 8-2 4-4 4M116 74c3 0 4 3 4 6s-2 5-2 8 2 4 4 4" stroke="#2A2318" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="79" cy="82" r="1.8" fill="#2A2318"/><circle cx="121" cy="82" r="1.8" fill="#2A2318"/><path d="M89 96h22v4H89z" fill="#E0C88E"/><path d="M96 20v76M100 20v76M104 20v76" stroke="#EDEBE2" stroke-width="1" opacity=".9"/><path d="M92 105h16v9H92z" fill="#3A2C18"/><path d="M148 30L166 108" stroke="#4A3A22" stroke-width="3.5" stroke-linecap="round"/><path d="M146 32L164 110" stroke="#E8E2D0" stroke-width="2" stroke-linecap="round"/></svg>',
+cello:'<svg viewBox="0 0 200 130"><path d="M20 122h160" stroke="#B5B0A0" stroke-width="3" stroke-linecap="round"/><rect x="94" y="2" width="12" height="26" rx="2" fill="#3A2C18"/><path d="M100 2c-4 0-6 2-6 5" stroke="#4A3A22" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M80 32c-11 3-17 12-17 23 0 8 5 13 6 20-8 5-13 16-13 28 0 19 20 28 44 28s44-9 44-28c0-12-5-23-13-28 1-7 6-12 6-20 0-11-6-20-17-23-12-3-28-3-40 0z" fill="#A85F32" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M80 68c-4 0-6 4-6 8s3 7 3 11-3 5-6 5M120 68c4 0 6 4 6 8s-3 7-3 11 3 5 6 5" stroke="#2A2318" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M88 92h24v5H88z" fill="#E0C88E"/><path d="M95 6v98M100 6v98M105 6v98" stroke="#EDEBE2" stroke-width="1.1" opacity=".9"/><path d="M90 104h20v8H90z" fill="#3A2C18"/><path d="M100 112v10" stroke="#8A8578" stroke-width="4"/></svg>',
+guitar:'<svg viewBox="0 0 200 130"><rect x="18" y="61" width="72" height="13" rx="2" fill="#8A6A3E"/><path d="M6 55h16v25H6z" fill="#4A3A22"/><circle cx="11" cy="61" r="2.4" fill="#C9A961"/><circle cx="11" cy="70" r="2.4" fill="#C9A961"/><circle cx="11" cy="76" r="2.4" fill="#C9A961"/><circle cx="18" cy="61" r="2.4" fill="#C9A961"/><circle cx="18" cy="70" r="2.4" fill="#C9A961"/><circle cx="18" cy="76" r="2.4" fill="#C9A961"/><path d="M88 46c5-9 14-13 22-10 7 3 8 10 12 12 6-11 16-19 28-19 20 0 34 18 34 39s-14 39-34 39c-12 0-22-8-28-19-4 2-5 9-12 12-8 3-17-1-22-10-4-8-4-36 0-44z" fill="#C9A961" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><circle cx="140" cy="68" r="14" fill="#2A2318"/><circle cx="140" cy="68" r="17.5" fill="none" stroke="#8A6A3E" stroke-width="2.5"/><rect x="166" y="60" width="9" height="17" rx="1.5" fill="#4A3A22"/><path d="M32 63h3M44 63h3M56 63h3M68 63h3M80 63h3" stroke="#C9C4B4" stroke-width="1.5"/><rect x="30" y="61" width="1.6" height="13" fill="#C9C4B4"/><rect x="42" y="61" width="1.6" height="13" fill="#C9C4B4"/><rect x="54" y="61" width="1.6" height="13" fill="#C9C4B4"/><rect x="66" y="61" width="1.6" height="13" fill="#C9C4B4"/><rect x="78" y="61" width="1.6" height="13" fill="#C9C4B4"/><path d="M14 62.5h156M14 65h156M14 67.5h156M14 70h156M14 72.5h156M14 75h156" stroke="#EDEBE2" stroke-width=".9" opacity=".95"/></svg>',
+owl:'<svg viewBox="0 0 200 130"><path d="M40 116h120" stroke="#6B5A47" stroke-width="7" stroke-linecap="round"/><path d="M100 18c-8-8-22-10-26-4-3 5 1 12 6 16-6 8-10 20-10 34 0 26 13 42 30 42s30-16 30-42c0-14-4-26-10-34 5-4 9-11 6-16-4-6-18-4-26 4z" fill="#8A7355" stroke="#2A2318" stroke-width="2.5" stroke-linejoin="round"/><path d="M100 30c-13 0-22 9-22 20s9 18 22 18 22-7 22-18-9-20-22-20z" fill="#E4DDCB"/><circle cx="88" cy="46" r="10" fill="#F5F2E8" stroke="#2A2318" stroke-width="2"/><circle cx="112" cy="46" r="10" fill="#F5F2E8" stroke="#2A2318" stroke-width="2"/><circle cx="88" cy="46" r="5.5" fill="#2A2318"/><circle cx="112" cy="46" r="5.5" fill="#2A2318"/><circle cx="90" cy="44" r="1.8" fill="#fff"/><circle cx="114" cy="44" r="1.8" fill="#fff"/><path d="M100 52l-5 8h10z" fill="#C9A961" stroke="#2A2318" stroke-width="1.6" stroke-linejoin="round"/><path d="M86 74q6 4 14 0M84 84q8 5 18 0M88 94q6 4 12 0" stroke="#6B5A47" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M74 68q-6 14 0 28M126 68q6 14 0 28" stroke="#6B5A47" stroke-width="3" fill="none"/><path d="M90 110v6M98 110v6M106 110v6M110 110v6" stroke="#C9A961" stroke-width="3.4" stroke-linecap="round"/></svg>',
+penguin:'<svg viewBox="0 0 200 130"><ellipse cx="100" cy="70" rx="32" ry="44" fill="#14262F"/><ellipse cx="100" cy="78" rx="20" ry="32" fill="#E9E7DA"/><circle cx="90" cy="44" r="4" fill="#E9E7DA"/><circle cx="110" cy="44" r="4" fill="#E9E7DA"/><path d="M100 52l-8 8h16z" fill="#C9A961"/><path d="M68 66q-10 18 0 32M132 66q10 18 0 32" stroke="#14262F" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M84 114h-14M116 114h14" stroke="#C9A961" stroke-width="7" stroke-linecap="round"/></svg>',
+eagle:'<svg viewBox="0 0 200 130"><path d="M96 52C80 40 58 30 34 28c-6 0-8 2-4 5 8 5 14 8 18 12-8-2-14-2-18-1-4 1-4 4 1 6 9 3 16 5 21 9-6 0-11 1-13 3-2 3 1 5 6 6 12 2 24 4 34 8z" fill="#6B5A47" stroke="#2A2318" stroke-width="2" stroke-linejoin="round"/><path d="M104 52c16-12 38-22 62-24 6 0 8 2 4 5-8 5-14 8-18 12 8-2 14-2 18-1 4 1 4 4-1 6-9 3-16 5-21 9 6 0 11 1 13 3 2 3-1 5-6 6-12 2-24 4-34 8z" fill="#6B5A47" stroke="#2A2318" stroke-width="2" stroke-linejoin="round"/><path d="M100 42c-9 0-14 8-14 20 0 16 5 30 14 42 9-12 14-26 14-42 0-12-5-20-14-20z" fill="#4A3D2E" stroke="#2A2318" stroke-width="2"/><path d="M88 92c3 12 6 20 12 26 6-6 9-14 12-26z" fill="#3A2F22" stroke="#2A2318" stroke-width="2" stroke-linejoin="round"/><circle cx="100" cy="34" r="15" fill="#F0EDE2" stroke="#2A2318" stroke-width="2"/><circle cx="94" cy="31" r="3" fill="#2A2318"/><path d="M86 34c-6 1-9 4-9 7 0 2 2 3 4 2l6-3z" fill="#C9A961" stroke="#2A2318" stroke-width="1.6" stroke-linejoin="round"/><path d="M96 98l-4 12M106 98l4 12" stroke="#C9A961" stroke-width="4" stroke-linecap="round"/></svg>',
+arch:'<svg viewBox="0 0 200 130"><path d="M0 104h200v8H0z" fill="#5F9FD0"/><path d="M10 78h180v10H10z" fill="#E9E7DA" stroke="#14262F" stroke-width="2.5"/><path d="M28 88q72-56 144 0" stroke="#C97B92" stroke-width="9" fill="none"/><path d="M60 88V70M100 88V56M140 88V70" stroke="#C97B92" stroke-width="5"/><path d="M10 88v20M190 88v20" stroke="#14262F" stroke-width="6"/></svg>',
+suspension:'<svg viewBox="0 0 200 130"><path d="M0 100h200v18H0z" fill="#4A7FA8"/><path d="M0 104q20 5 40 0t40 0 40 0 40 0 40 0" stroke="#5F9FD0" stroke-width="2" fill="none" opacity=".6"/><rect x="4" y="82" width="192" height="9" fill="#C9C4B4" stroke="#2A2318" stroke-width="2"/><rect x="44" y="12" width="9" height="78" fill="#8A8578" stroke="#2A2318" stroke-width="2"/><rect x="147" y="12" width="9" height="78" fill="#8A8578" stroke="#2A2318" stroke-width="2"/><path d="M44 22h9M44 40h9M147 22h9M147 40h9" stroke="#2A2318" stroke-width="2"/><path d="M4 44C22 34 38 22 48 16" stroke="#C9A961" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M48 16C70 44 130 44 152 16" stroke="#C9A961" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M152 16c10 6 26 18 44 28" stroke="#C9A961" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M20 33v49M32 27v55M64 30v52M80 40v42M100 44v38M120 40v42M136 30v52M168 27v55M180 33v49" stroke="#C9A961" stroke-width="1.8"/></svg>',
+volcano:'<svg viewBox="0 0 200 130"><path d="M20 106h160L120 40h-40z" fill="#7C8899" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/><path d="M84 40h32l-6 8h-20z" fill="#C97B92"/><path d="M92 40l-6-22 8 10 6-16 6 16 8-10-6 22z" fill="#C9A961"/><path d="M96 48l-12 44h20l-8 14" stroke="#C97B92" stroke-width="5" stroke-linecap="round" fill="none"/></svg>',
+canyon:'<svg viewBox="0 0 200 130"><path d="M0 106h200v10H0z" fill="#7FA88B"/><path d="M0 40h64l16 24-10 42H0z" fill="#C9A961" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/><path d="M200 34h-62l-18 30 12 42h68z" fill="#C9A961" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/><path d="M0 62h60M138 58h62M0 82h54M144 80h56" stroke="#9C7F3E" stroke-width="3"/><path d="M84 106q10-30 30-30" stroke="#5F9FD0" stroke-width="7" fill="none" stroke-linecap="round"/></svg>',
+glacier:'<svg viewBox="0 0 200 130"><path d="M0 88h200v26H0z" fill="#5F9FD0"/><path d="M40 88L74 30l30 58z" fill="#E9E7DA" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/><path d="M96 88l38-40 34 40z" fill="#F7F5EC" stroke="#14262F" stroke-width="2.5" stroke-linejoin="round"/><path d="M0 88h200" stroke="#14262F" stroke-width="2.5"/><path d="M46 100h30M120 104h40" stroke="#4FB3A8" stroke-width="4" stroke-linecap="round"/></svg>'
+};
+
+/* ---------- קטגוריות ---------- */
+/* modes: באילו הרכבים הקטגוריה מופיעה | scored: האם יש ניקוד */
+const PACKS={
+eye:{name:'עין חדה',ink:'#7FA88B',ico:'eye',modes:['duo','fam'],scored:true,note:'מסתכלים ומזהים',cards:[
+ {t:'vis',art:'yacht',q:'מה רואים בתמונה?',o:['יאכטה מנוע','סירת מפרש','ספינת מטען'],f:'יאכטה: גוף חלק, קומות, בלי מפרש. הכוח מגיע ממנוע בלבד.'},
+ {t:'vis',art:'sail',q:'ואיזו סירה זו?',o:['סירת מפרש','יאכטה מנוע','ספינת דיג'],f:'שני מפרשים ותורן. הרוח היא המנוע - זו הסירה הכי ותיקה בעולם.'},
+ {t:'vis',art:'cargo',q:'מה זה הכלי הזה?',o:['ספינת מכולות','ספינת נוסעים','צוללת'],f:'ספינת מכולות. הגדולות נושאות מעל 20,000 מכולות - כמעט כל מה שבבית הגיע באחת כזאת.'},
+ {t:'vis',art:'ydog',q:'איזו תנוחת יוגה זו?',o:['כלב מביט מטה','תנוחת הלוחם','תנוחת העץ'],f:'כלב מביט מטה. מותחת גב, ירכיים ושוקיים - ובאמת נקראה על שם המתיחה של כלבים.'},
+ {t:'vis',art:'ywarrior',q:'ואיזו תנוחה זו?',o:['תנוחת הלוחם','תנוחת הגשר','כלב מביט מטה'],f:'הלוחם 2. רגליים פשוקות, ידיים לצדדים, מבט קדימה - תנוחת כוח ויציבות.'},
+ {t:'vis',art:'ytree',q:'איך קוראים לתנוחה הזאת?',o:['תנוחת העץ','תנוחת הכיסא','תנוחת הילד'],f:'העץ. עומדים על רגל אחת - וזו התנוחה שהכי קשה לעשות כשצוחקים.'},
+ {t:'vis',art:'catcalm',q:'מה החתול הזה מרגיש?',o:['רגוע ובטוח','מפוחד','מתכונן לצוד'],f:'זנב רפוי, אוזניים קדימה, גוף מכווץ פנימה. חתול שמרגיש בטוח מספיק כדי לא להיות מוכן לברוח.'},
+ {t:'vis',art:'catscared',q:'ומה הוא מרגיש עכשיו?',o:['מפוחד','משועמם','רעב'],f:'גב מקושת, פרווה סומרת, זנב תפוח. הוא מנסה להיראות גדול יותר - זה פחד, לא כעס.'},
+ {t:'vis',art:'cathunt',q:'ומה קורה פה?',o:['הוא במצב ציד','הוא ישן','הוא מבקש אוכל'],f:'גוף נמוך, אוזניים קדימה, זנב מתוח. שנייה לפני זינוק.'},
+ {t:'vis',art:'layup',q:'איזו קליעה זו?',o:['לייאפ','דאנק','זריקה חופשית'],f:'לייאפ: ריצה לסל, קפיצה מרגל אחת והנחה רכה בלוח. הקליעה הראשונה שכל שחקן לומד.'},
+ {t:'vis',art:'dunk',q:'ואיזו קליעה זו?',o:['דאנק','שלשה','חטיפה'],f:'דאנק. הכדור נדחף מלמעלה ישירות לתוך הסל - עד 1976 זה בכלל היה אסור בליגה האמריקאית.'},
+ {t:'vis',art:'freethrow',q:'ומה השחקן הזה עושה?',o:['זריקה חופשית','מסירה','כדרור'],f:'זריקה חופשית: מהקו, בלי הגנה, אף אחד לא זז. הקליעה היחידה במשחק שהיא רק אתה והסל.'},
+ {t:'vis',art:'mooncres',q:'איזה שלב של הירח זה?',o:['סהר','חצי ירח','ירח מלא'],f:'סהר. הירח לא משנה צורה - אנחנו פשוט רואים חלק אחר מהצד המואר שלו.'},
+ {t:'vis',art:'moonhalf',q:'ואיזה שלב זה?',o:['חצי ירח','סהר','ליקוי'],f:'רבע ראשון, שנראה כמו חצי. נקרא "רבע" כי הירח השלים רבע ממסלולו סביבנו.'},
+ {t:'vis',art:'moonfull',q:'ומה רואים כאן?',o:['ירח מלא','ירח חדש','ליקוי חמה'],f:'ירח מלא. הכתמים הכהים הם מישורי לבה עתיקים - קוראים להם "ימים", אף שאין בהם טיפת מים.'},
+ {t:'vis',art:'cumulus',q:'איזה ענן זה?',o:['ענן ערימה','ענן נוצה','ענן סערה'],f:'קומולוס, ענן הערימה. תחתית שטוחה וראש תפוח - זה ענן של יום יפה.'},
+ {t:'vis',art:'cirrus',q:'ואיזה ענן זה?',o:['ענן נוצה','ענן ערימה','ערפל'],f:'צירוס, ענן הנוצה. גבוה מאוד ועשוי כולו גבישי קרח - לרוב מבשר שינוי מזג אוויר.'},
+ {t:'vis',art:'storm',q:'ומה מתקרב פה?',o:['ענן סערה','ענן נוצה','שקיעה'],f:'קומולונימבוס. יכול להתנשא 12 קילומטר לגובה ולהכיל ברקים, גשם וברד.'},
+ {t:'vis',art:'violin',q:'איזה כלי נגינה זה?',o:['כינור','צ\'לו','גיטרה'],f:'כינור - הקטן והגבוה במשפחה, מונח על הכתף.'},
+ {t:'vis',art:'cello',q:'ואיזה כלי זה?',o:['צ\'לו','כינור','נבל'],f:'צ\'לו. גדול פי כמה מכינור, עומד על הרצפה על מוט - והצליל שלו הכי קרוב לקול אדם.'},
+ {t:'vis',art:'guitar',q:'ומה זה?',o:['גיטרה','מנדולינה','צ\'לו'],f:'גיטרה. חור עגול, שש מיתרים, ומנגנים בפריטה ולא בקשת.'},
+ {t:'vis',art:'owl',q:'איזו ציפור זו?',o:['ינשוף','נשר','פינגווין'],f:'ינשוף. עיניים ענקיות שקבועות במקומן - ולכן הוא מסובב את כל הראש כדי להסתכל הצדה.'},
+ {t:'vis',art:'penguin',q:'ואיזו ציפור זו?',o:['פינגווין','ברווז','ינשוף'],f:'פינגווין. ציפור שלא מסוגלת לעוף באוויר - אבל ממש עפה מתחת למים.'},
+ {t:'vis',art:'eagle',q:'ומי זה?',o:['עיט','יונה','תוכי'],f:'עיט. רואה עכבר מגובה של קילומטר - ראייה חדה בערך פי חמישה משלנו.'},
+ {t:'vis',art:'arch',q:'איזה סוג גשר זה?',o:['גשר קשת','גשר תלוי','גשר צף'],f:'גשר קשת. הקשת מעבירה את המשקל לצדדים - הרומאים בנו כך גשרים שעומדים 2,000 שנה.'},
+ {t:'vis',art:'suspension',q:'ואיזה גשר זה?',o:['גשר תלוי','גשר קשת','גשר מתרומם'],f:'גשר תלוי. הכביש תלוי על כבלים מהמגדלים - כך אפשר לגשר על מרחקים ענקיים.'},
+ {t:'vis',art:'volcano',q:'מה רואים כאן?',o:['הר געש','קניון','קרחון'],f:'הר געש. הלבה שיוצאת ממנו יכולה להגיע ל-1,200 מעלות.'},
+ {t:'vis',art:'canyon',q:'ואיזה נוף זה?',o:['קניון','הר געש','חוף'],f:'קניון. נחקק במשך מיליוני שנים על ידי נהר - מים סבלניים חזקים מסלע.'},
+ {t:'vis',art:'glacier',q:'ומה זה?',o:['קרחון','הר שלג','ענן'],f:'קרחון. תשע עשיריות ממנו נמצאות מתחת למים - ומכאן הביטוי "קצה הקרחון".'},
+]},
+
+sci:{name:'מדע וחלל',ink:'#4FB3A8',ico:'sci',modes:['duo','fam'],scored:true,note:'שאלות ידע',cards:[
+ {t:'mc',q:'כמה זמן לוקח לאור השמש להגיע אלינו?',o:['בערך 8 דקות','בערך 8 שניות','בערך 8 שעות'],f:'8 דקות ו-20 שניות. כשמסתכלים על השמש רואים עבר.'},
+ {t:'mc',q:'איזה כוכב לכת הכי חם במערכת השמש?',o:['נוגה','כוכב חמה','מאדים'],f:'אפקט החממה של נוגה מטגן אותה ל-460 מעלות, למרות שחמה קרוב יותר לשמש.'},
+ {t:'mc',q:'ממה עשויות הטבעות של שבתאי?',o:['גושי קרח ואבנים','גז דחוס','אבק זהב'],f:'ממיליארדי חלקיקים - מגרגרים ועד סלעים בגודל בית.'},
+ {t:'mc',q:'מה יש יותר?',o:['עצים בכדור הארץ','כוכבים בשביל החלב','בערך אותו דבר'],f:'בערך 3 טריליון עצים מול כמה מאות מיליארדי כוכבים בגלקסיה.'},
+ {t:'mc',q:'כמה לבבות יש לתמנון?',o:['שלושה','אחד','חמישה'],f:'שניים לזימים ואחד לגוף. והדם שלו כחול.'},
+ {t:'mc',q:'מה מהירות האור?',o:['300 אלף ק"מ בשנייה','300 אלף קמ"ש','3,000 ק"מ בשנייה'],f:'7.5 הקפות של כדור הארץ בשנייה אחת.'},
+ {t:'mc',q:'למי יש יותר עצמות?',o:['לתינוק','למבוגר','אותו מספר'],f:'תינוק נולד עם כ-300 עצמות, וחלקן מתאחות עד 206.'},
+ {t:'mc',q:'איזה כוכב לכת "שוכב על הצד"?',o:['אורנוס','נפטון','צדק'],f:'הציר שלו מוטה כמעט 98 מעלות, כנראה מהתנגשות ענקית.'},
+ {t:'mc',q:'כמה דבש מייצרת דבורה אחת בכל חייה?',o:['בערך 1/12 כפית','צנצנת שלמה','כוס מלאה'],f:'צנצנת דבש אחת היא עבודת חיים של מאות דבורים.'},
+ {t:'mc',q:'מה החומר הטבעי הקשה ביותר?',o:['יהלום','פלדה','גרניט'],f:'פחמן רגיל, רק מסודר בצורה עקשנית במיוחד.'},
+ {t:'mc',q:'כמה מהגנים שלנו משותפים לבננה?',o:['בערך 50-60%','בערך 5%','בערך 95%'],f:'כן, לבננה. חצי מהגנים. תחשבו על זה בארוחת בוקר.'},
+ {t:'mc',q:'כמה זמן לוקח לטוס לירח?',o:['בערך 3 ימים','בערך 3 שעות','בערך 3 שבועות'],f:'אפולו 11 עשתה את הדרך ב-76 שעות.'},
+ {t:'mc',q:'כמה חוליות צוואר לג\'ירפה לעומת אדם?',o:['אותו מספר - 7','כפול - 14','פי שלושה'],f:'אותן שבע חוליות בדיוק, רק ענקיות.'},
+ {t:'mc',q:'כמה מקרקעית האוקיינוסים מיפינו לעומק?',o:['פחות מ-25%','בערך 60%','כמעט 95%'],f:'אנחנו מכירים את פני המאדים טוב יותר מקרקעית הים שלנו.'},
+ {t:'mc',q:'חוט קורי עכביש חזק יותר מ...',o:['פלדה באותו עובי','גומי','חוט דיג'],f:'ביחס למשקל, מהחומרים החזקים שהטבע ייצר.'},
+ {t:'mc',q:'מה הטמפרטורה במרכז השמש?',o:['כ-15 מיליון מעלות','כ-15 אלף מעלות','כ-1,500 מעלות'],f:'ועל פני השטח "רק" 5,500 מעלות.'},
+ {t:'mc',q:'איזו חיה לא מסוגלת לקפוץ בכלל?',o:['פיל','קנגורו','צפרדע'],f:'היחיד שלא מנתק אף פעם את ארבע הרגליים מהקרקע.'},
+ {t:'mc',q:'כמה מגוף האדם הוא מים?',o:['בערך 60%','בערך 30%','בערך 90%'],f:'המוח לבדו הוא כ-75% מים.'},
+ {t:'mc',q:'מי הופיע קודם על כדור הארץ?',o:['כרישים','עצים','דינוזאורים'],f:'כרישים קיימים כ-450 מיליון שנה, עוד לפני שהיו יערות.'},
+ {t:'mc',q:'ממה מורכב רוב הנפח של אטום?',o:['חלל ריק','הגרעין','אלקטרונים'],f:'אם הגרעין היה כדורגל, האלקטרון היה מרחף קילומטרים ממנו.'},
+ {t:'mc',q:'לתאומים זהים יש אותן טביעות אצבע?',o:['לא, הן שונות לגמרי','כן, זהות בדיוק','רק עד גיל שנה'],f:'הגנים זהים, אבל טביעות האצבע נוצרות מהתנועה ברחם - ולכן לכל אחד יש משלו.'},
+ {t:'mc',q:'איפה הר הגעש הגדול במערכת השמש?',o:['במאדים','בכדור הארץ','בירח'],f:'אולימפוס מונס, גבוה פי 2.5 מאוורסט.'},
+ {t:'mc',q:'באיזו מהירות מסתובב כדור הארץ בקו המשווה?',o:['כ-1,600 קמ"ש','כ-160 קמ"ש','כ-16,000 קמ"ש'],f:'ולא מרגישים כלום, כי הכול נע יחד איתנו.'},
+]},
+
+triv:{name:'טריוויה',ink:'#C9A961',ico:'triv',modes:['duo','fam'],scored:true,note:'ידע כללי',cards:[
+ {t:'mc',q:'מה בירת יפן?',o:['טוקיו','קיוטו','סיאול'],f:'קיוטו הייתה הבירה במשך יותר מאלף שנה.'},
+ {t:'mc',q:'כמה שחקנים לקבוצת כדורגל על המגרש?',o:['11','9','12'],f:'כולל השוער.'},
+ {t:'mc',q:'מי צייר את המונה ליזה?',o:['לאונרדו דה וינצ\'י','מיכלאנג\'לו','פיקאסו'],f:'והיא קטנה להפתיע: 77 על 53 ס"מ.'},
+ {t:'mc',q:'מה ההר הגבוה בעולם?',o:['אוורסט','K2','קילימנג\'רו'],f:'8,849 מטר, ועדיין גדל כמה מילימטרים בשנה.'},
+ {t:'mc',q:'כמה מיתרים בגיטרה רגילה?',o:['שישה','חמישה','שבעה'],f:'E-A-D-G-B-E, למי שרוצה להשוויץ.'},
+ {t:'mc',q:'מה החיה הכי מהירה ביבשה?',o:['ברדלס','אריה','סוס מרוץ'],f:'עד 110 קמ"ש, אבל רק לספרינט של שניות.'},
+ {t:'mc',q:'איפה הומצאה הפיצה המודרנית?',o:['איטליה','יוון','צרפת'],f:'נאפולי. פיצה מרגריטה נקראה על שם מלכה אמיתית.'},
+ {t:'mc',q:'כמה צבעים בקשת?',o:['שבעה','שישה','שמונה'],f:'אדום, כתום, צהוב, ירוק, כחול, אינדיגו, סגול.'},
+ {t:'mc',q:'מה היבשת הגדולה בעולם?',o:['אסיה','אפריקה','אמריקה הצפונית'],f:'בערך 60% מבני האדם חיים בה.'},
+ {t:'mc',q:'מה בעל החיים הגדול שחי אי פעם?',o:['הלווייתן הכחול','ארגנטינוזאורוס','מגלודון'],f:'והוא חי איתנו עכשיו. הלב שלו בגודל מכונית קטנה.'},
+ {t:'mc',q:'איך קוראים למכשיר שמודד רעידות אדמה?',o:['סייסמוגרף','ברומטר','תרמוסטט'],f:'ברומטר מודד לחץ אוויר, תרמוסטט נשאר בסלון.'},
+ {t:'mc',q:'מה המקום הנמוך ביבשה בעולם?',o:['ים המלח','עמק המוות','הים הכספי'],f:'כ-430 מטר מתחת לפני הים, במרחק נסיעה מהבית.'},
+ {t:'mc',q:'באיזו עיר נמצא מגדל אייפל?',o:['פריז','לונדון','רומא'],f:'נבנה ב-1889 והיה אמור להתפרק אחרי 20 שנה.'},
+ {t:'mc',q:'כמה טבעות בסמל האולימפי?',o:['חמש','ארבע','שש'],f:'מייצגות את חמש היבשות המיושבות.'},
+ {t:'mc',q:'מה הגמל אוגר בדבשת?',o:['שומן','מים','אוכל לחירום'],f:'לא מים. שומן, שממנו הגוף מפיק גם אנרגיה וגם מים.'},
+ {t:'mc',q:'כמה קלידים בפסנתר רגיל?',o:['88','76','100'],f:'52 לבנים ו-36 שחורים.'},
+ {t:'mc',q:'מאיזה צמח מכינים שוקולד?',o:['קקאו','קפה','חרוב'],f:'הפולים גדלים בתרמילים ישירות על גזע העץ.'},
+ {t:'mc',q:'כמה ירחים לכדור הארץ?',o:['אחד','שניים','אפס'],f:'לצדק, לעומת זאת, מעל 90.'},
+ {t:'mc',q:'באיזו מדינה החומה הגדולה?',o:['סין','יפן','מונגוליה'],f:'אורכה הכולל מוערך ביותר מ-21,000 ק"מ.'},
+ {t:'mc',q:'אילו צבעים מערבבים כדי לקבל ירוק?',o:['כחול וצהוב','אדום וכחול','צהוב ואדום'],f:'אדום וכחול נותנים סגול.'},
+ {t:'mc',q:'מה העיר הגדולה בישראל באוכלוסייה?',o:['ירושלים','תל אביב','חיפה'],f:'קרוב למיליון תושבים.'},
+ {t:'mc',q:'מה פירוש WWW?',o:['World Wide Web','World Web Wide','Wide World Web'],f:'הומצא ב-1989 וניתן לעולם בחינם.'},
+]},
+
+myth:{name:'אמת או מיתוס',ink:'#7FA88B',ico:'myth',modes:['duo','fam'],scored:true,note:'מאמינים או לא',cards:[
+ {t:'tf',q:'ברק אף פעם לא פוגע פעמיים באותו מקום.',ans:false,f:'בניין האמפייר סטייט חוטף כ-25 פגיעות בשנה.'},
+ {t:'tf',q:'החומה הסינית נראית מהחלל בעין רגילה.',ans:false,f:'אסטרונאוטים מעידים: רואים כבישים וערים, אותה לא.'},
+ {t:'tf',q:'אנחנו משתמשים רק ב-10% מהמוח.',ans:false,f:'סריקות מראות שכמעט כל המוח פעיל, גם בשינה.'},
+ {t:'tf',q:'דבש כמעט לא מתקלקל לעולם.',ans:true,f:'מצאו דבש בן אלפי שנים בקברים מצריים, עדיין אכיל.'},
+ {t:'tf',q:'עטלפים עיוורים לגמרי.',ans:false,f:'הם רואים לא רע. הסונאר הוא בונוס.'},
+ {t:'tf',q:'לתמנון יש דם כחול.',ans:true,f:'נחושת במקום ברזל בדם, וזה צובע אותו כחול.'},
+ {t:'tf',q:'זהב אמיתי הוא חומר אכיל.',ans:true,f:'יש לו אפילו מספר תוסף מזון: E175.'},
+ {t:'tf',q:'מסטיק שנבלע נשאר בבטן שבע שנים.',ans:false,f:'לא מתעכל, אבל יוצא בדרך הרגילה תוך ימים.'},
+ {t:'tf',q:'לדג זהב יש זיכרון של 3 שניות.',ans:false,f:'מחקרים מראים שהם זוכרים חודשים, כולל אימונים.'},
+ {t:'tf',q:'נמלים בכלל לא ישנות.',ans:false,f:'הן ישנות מאות נמנומים קצרצרים ביום.'},
+ {t:'tf',q:'בננה היא "ברי" מבחינה בוטנית.',ans:true,f:'ותות שדה דווקא לא. הבוטניקה עושה דווקא.'},
+ {t:'tf',q:'קוקה קולה הייתה פעם ירוקה.',ans:false,f:'תמיד הייתה חומה. אגדה אורבנית עקשנית.'},
+ {t:'tf',q:'שוורים מתעצבנים מהצבע האדום.',ans:false,f:'הם לא מבחינים באדום בכלל, מגיבים לתנועת הבד.'},
+ {t:'tf',q:'לירח יש צד שלעולם לא מקבל אור שמש.',ans:false,f:'יש צד שאנחנו לא רואים, אבל השמש מאירה גם אותו.'},
+ {t:'tf',q:'פינגווינים חיים גם בקוטב הצפוני.',ans:false,f:'רק בחצי הדרומי. בצפון יש דובי קוטב, והם לא נפגשים.'},
+ {t:'tf',q:'בלימון יש יותר סוכר מבתות שדה.',ans:true,f:'החומצה פשוט מסתירה את המתיקות לגמרי.'},
+ {t:'tf',q:'לכל אזור בלשון יש טעם משלו.',ans:false,f:'כל הלשון קולטת את כל הטעמים. "מפת הלשון" פשוט שגויה.'},
+ {t:'tf',q:'ינשוף מסובב את הראש 360 מעלות.',ans:false,f:'"רק" כ-270 מעלות, וזה עדיין מטורף.'},
+ {t:'tf',q:'הדם בוורידים כחול עד שהוא פוגש אוויר.',ans:false,f:'תמיד אדום. הוורידים רק נראים כחולים דרך העור.'},
+ {t:'tf',q:'תנין לא יכול להוציא את הלשון מהפה.',ans:true,f:'היא מחוברת לתחתית הפה לכל אורכה.'},
+ {t:'tf',q:'בחלל אי אפשר לבכות דמעות שנופלות.',ans:true,f:'הן נדבקות לעיניים בכדוריות. אין כבידה שתפיל אותן.'},
+ {t:'tf',q:'תאומים זהים הם תמיד מאותו המין.',ans:true,f:'הם מגיעים מביצית אחת שהתחלקה, אז הכרומוזומים זהים.'},
+ {t:'tf',q:'גזר משפר משמעותית ראיית לילה.',ans:false,f:'תעמולה בריטית ממלחמת העולם השנייה, להסתרת מכ"ם.'},
+]},
+
+guess:{name:'נחש אותי',ink:'#C97B92',ico:'guess',modes:['duo','fam'],scored:true,note:'כמה אנחנו מכירים',cards:[
+ {t:'guess',q:'איזה מאכל אחד {x} לוקח/ת לאי בודד?'},
+ {t:'guess',q:'איזה כוח-על {x} היה/הייתה בוחר/ת?'},
+ {t:'guess',q:'לאיזו מדינה {x} הכי רוצה לטוס?'},
+ {t:'guess',q:'איזה שיר {x} היה/הייתה שם/ה בלופ ליום שלם?'},
+ {t:'guess',q:'אם {x} היה/הייתה חיה, איזו חיה?'},
+ {t:'guess',q:'על מה {x} מסוגל/ת לדבר שעה בלי להפסיק?'},
+ {t:'guess',q:'איזה סרט {x} מוכן/ה לראות שוב ושוב?'},
+ {t:'guess',q:'איזה טעם גלידה {x} בוחר/ת כמעט תמיד?'},
+ {t:'guess',q:'מה הכישרון הנסתר של {x}?'},
+ {t:'guess',q:'מה הדבר שהכי מעצבן את {x}?'},
+ {t:'guess',q:'באיזה תחום {x} היה/הייתה שובר/ת שיא גינס?'},
+ {t:'guess',q:'מה {x} עושה קודם בבוקר חופשי לגמרי?'},
+ {t:'guess',q:'מה המקצוע האהוב על {x} בבית הספר, עכשיו או פעם?'},
+ {t:'guess',q:'איזו ארוחה {x} מזמין/ה אם מותר הכול?'},
+ {t:'guess',q:'ממה {x} הכי נבהל/ת: עכבישים, גבהים או חושך?'},
+ {t:'guess',q:'באיזה משחק {x} יכול/ה לשקוע שעות?'},
+]},
+
+hypo:{name:'היפותטיות',ink:'#9084C9',ico:'hypo',modes:['duo','fam'],scored:false,note:'אין תשובה נכונה',cards:[
+ {t:'open',q:'קיבלתם מיליון שקל, אבל אסור לספר לאף אחד. מה עושים איתו?'},
+ {t:'open',q:'יום שלם שאתם בלתי נראים. לאן הולכים קודם?'},
+ {t:'open',q:'ארוחת ערב עם כל אדם בהיסטוריה. מי יושב מולכם?'},
+ {t:'open',q:'אם החדר שאנחנו יושבים בו היה יכול לדבר, מה היה אומר עלינו?'},
+ {t:'open',q:'התכווצתם לגודל של נמלה ליום אחד. מה עושים?'},
+ {t:'open',q:'כפתור שעוצר את הזמן לשעה ביום. מה עושים בשעה הזאת?'},
+ {t:'open',q:'מותר לשאול את העתיד שאלה אחת בלבד. מה שואלים?'},
+ {t:'open',q:'מוסיפים חג חדש ללוח השנה. מה חוגגים בו ואיך?'},
+ {t:'open',q:'מותר למחוק המצאה אחת מהעולם לתמיד. איזו?'},
+ {t:'open',q:'החיות מדברות ל-24 שעות. עם מי מדברים קודם ומה שואלים?'},
+ {t:'open',q:'בונים פארק שעשועים משלנו. מה המתקן המרכזי?'},
+ {t:'open',q:'חוזרים לגיל 5 עם כל הידע של היום. מה עושים אחרת?'},
+ {t:'open',q:'טסים לחלל מחר בבוקר, מותר לקחת 3 דברים. מה לוקחים?'},
+ {t:'open',q:'ממציאים פיצה חדשה שתיכנס לתפריט העולמי. מה עליה?'},
+ {t:'open',q:'שלוש משאלות, אבל אסור כסף ואסור עוד משאלות. מה מבקשים?'},
+ {t:'open',q:'חייבים לחיות יום אחד שוב ושוב במשך חודש. איזה יום בוחרים?'},
+]},
+
+who:{name:'מי מאיתנו',ink:'#5F9FD0',ico:'who',modes:['duo','fam'],scored:true,note:'מצביעים יחד',cards:[
+ {t:'who',q:'מי מאיתנו יותר סביר שיירדם מול הטלוויזיה?'},
+ {t:'who',q:'מי מאיתנו ישרוד יותר זמן בלי טלפון?'},
+ {t:'who',q:'מי מאיתנו יאכל משהו שנפל על הרצפה?'},
+ {t:'who',q:'מי מאיתנו צוחק ראשון בסרט מצחיק?'},
+ {t:'who',q:'מי מאיתנו היה שורד יותר על אי בודד?'},
+ {t:'who',q:'מי מאיתנו יותר עקשן?'},
+ {t:'who',q:'מי מאיתנו שוכח איפה שם את המפתחות?'},
+ {t:'who',q:'מי מאיתנו מנצח בתחרות ריקודים?'},
+ {t:'who',q:'מי מאיתנו יאמץ עוד חיה בלי לשאול אף אחד?'},
+ {t:'who',q:'מי מאיתנו קם יותר בקלות בבוקר?'},
+ {t:'who',q:'מי מאיתנו שר יותר טוב במקלחת?'},
+ {t:'who',q:'מי מאיתנו ילך לאיבוד קודם בעיר זרה?'},
+ {t:'who',q:'מי מאיתנו מסיים את הפופקורן לפני שהסרט מתחיל?'},
+ {t:'who',q:'מי מאיתנו יותר מסודר?'},
+ {t:'who',q:'מי מאיתנו גרוע יותר בלשקר?'},
+ {t:'who',q:'מי מאיתנו תמיד מאחר?'},
+]},
+
+mus:{name:'מוזיקה',ink:'#7B8FE8',ico:'mus',modes:['duo','fam'],scored:true,note:'ידע והשמעות',cards:[
+ {t:'mc',q:'מה זה BPM בשיר?',o:['פעימות בדקה','אורך השיר','עוצמת הבס'],f:'קצב. בלדה נעה סביב 70, שיר ריקודים סביב 120-130.'},
+ {t:'mc',q:'איזה סולם נשמע לרוב עצוב יותר?',o:['מינור','מז\'ור','שניהם זהים'],f:'מינור. אותן תווים בסדר אחר משנים לגמרי את התחושה.'},
+ {t:'mc',q:'מאיזו מוזיקה צמח הרוק?',o:['בלוז','ג\'אז','קלאסית'],f:'הבלוז הוא ההורה. גם הג\'אז וגם הרוק יצאו ממנו.'},
+ {t:'mc',q:'איפה נולד הבלוז?',o:['בדרום ארצות הברית','באנגליה','בברזיל'],f:'בדלתת המיסיסיפי, מתוך שירת עבדים אפרו-אמריקאים.'},
+ {t:'mc',q:'מה זה "סאמפל"?',o:['קטע מהקלטה קיימת שמשולב בשיר חדש','שיר קצר','גרסה ראשונה'],f:'ההיפ הופ נבנה על זה, וגם חצי מהמוזיקה האלקטרונית.'},
+ {t:'mc',q:'מה המשמעות של "אינדי" במוזיקה?',o:['עצמאי, מחוץ לחברות הגדולות','סגנון הודי','מוזיקה איטית'],f:'מ-independent. התחיל כשיטת הפצה והפך לצליל מזוהה.'},
+ {t:'mc',q:'מה זה "הוק" בשיר?',o:['הקטע הקצר שנתקע בראש','הפתיחה','הסולו'],f:'לפעמים חמש שניות. זה מה שמוכר את השיר.'},
+ {t:'mc',q:'ראשי התיבות R&B הם...',o:['Rhythm and Blues','Rock and Ballads','Rap and Beats'],f:'נולד בשנות ה-40, והיום מתכוון למשהו רך וחשמלי הרבה יותר.'},
+ {t:'mc',q:'כמה צלילים יש באוקטבה בסולם הכרומטי?',o:['12','8','7'],f:'12 חצאי טונים. כל המוזיקה המערבית בנויה עליהם.'},
+ {t:'mc',q:'למה שירים ישנים רבים נגמרים בדעיכה?',o:['כדי שלא יצטרכו לכתוב סיום','בגלל תקלה בהקלטה','כדי לחסוך זמן'],f:'זה גם עזר לתקליטנים לעבור בין שירים בלי מעבר חד.'},
+ {t:'mc',q:'מה עושה מפיק מוזיקלי?',o:['אחראי על הצליל הכולל של ההקלטה','כותב את המילים','מנגן בס'],f:'הוא שומע את השיר לפני שהוא קיים, ומחליט איך הוא יישמע.'},
+ {t:'mc',q:'למה שיר פופ ממוצע נמשך בערך 3 דקות?',o:['בגלל מגבלת התקליטים הישנים','כי זה מספיק זמן','חוק של הרדיו'],f:'תקליט 78 סל"ד הכיל בערך 3 דקות לצד. ההרגל נשאר גם אחרי שהמגבלה נעלמה.'},
+ {t:'mc',q:'אביתר בנאי הוא בנו של איזה אמן?',o:['יוסי בנאי','אהוד בנאי','מאיר בנאי'],f:'שושלת בנאי היא אחת המשפחות המרכזיות באמנות הישראלית, על פני דורות.'},
+ {t:'mc',q:'מה מאפיין מוזיקה "ים תיכונית" ישראלית?',o:['השפעות יווניות, טורקיות וערביות','שימוש בסינתיסייזר','טקסטים באנגלית'],f:'הסלסול והמקאם הגיעו משם, ונפגשו עם פופ מערבי.'},
+ {t:'mc',q:'מה זה "קאבר"?',o:['ביצוע של שיר קיים בידי אמן אחר','שיר פתיחה','עטיפת האלבום'],f:'לפעמים הקאבר מפורסם יותר מהמקור. קרה הרבה יותר משנדמה.'},
+ {t:'mc',q:'מה מייצר סינתיסייזר?',o:['צלילים בדרך חשמלית','הד','קצב בלבד'],f:'הוא לא מחקה כלי - הוא בונה צליל מאפס, ולכן אפשר להמציא בו צלילים שלא קיימים.'},
+ {t:'open',tots:0,q:'התור שלך: תשמיע 30 שניות משיר שאתה אוהב, ותסביר מה בדיוק קורה שם שגורם לך לאהוב אותו.',h:'לא "כי הוא יפה". מה שומעים - הקצב, הקול, הבס, המילים?'},
+ {t:'open',tots:0,q:'תשמיע שיר ש{x} בטוח לא מכיר. {x} מקשיב/ה ואומר/ת מה הוא/היא שומע/ת בו.',h:'אסור להתנצל על הבחירה מראש.'},
+ {t:'open',tots:0,q:'בוחרים יחד שיר אחד, מקשיבים למילים עד הסוף, וכל אחד אומר על מה השיר לדעתו.',h:'אין תשובה נכונה. מעניין דווקא איפה אתם לא מסכימים.'},
+ {t:'open',tots:0,q:'תשמיע שיר בלי לומר את שמו. השאר מנחשים באיזה עשור הוא יצא.',h:'רמז: הצליל של התופים מסגיר עשור כמעט תמיד.'},
+ {t:'open',tots:0,q:'התור שלך: שיר אחד שמחזיר אותך למקום מסוים. איפה, ומתי?'},
+ {t:'open',tots:0,q:'תשמיע שיר שפעם לא אהבת והיום כן. מה השתנה - השיר או אתה?'},
+ {t:'open',q:'כל אחד בוחר שיר אחד לפלייליסט משפחתי משותף. אסור לפסול אף בחירה.',h:'אחרי המשחק - באמת לפתוח את הפלייליסט.'},
+ {t:'open',tots:0,q:'התור שלך: תשמיע שיר, והשאר צריכים לזהות בו כלי נגינה אחד.',h:'להקשיב מתחת לשירה. שם נמצא רוב מה שקורה.'},
+ {t:'open',tots:0,q:'תשמיע שיר בשפה שאף אחד כאן לא מדבר. מה מרגישים בלי להבין אף מילה?'},
+ {t:'open',tots:0,q:'התור שלך: תבחר שיר שהיית רוצה ש{x} יאהב, ותסביר למה דווקא הוא מתאים לו/ה.'},
+ {t:'open',q:'איזה שיר מתאים למשפחה שלנו, ולמה דווקא הוא?'},
+ {t:'open',tots:0,q:'כל אחד בוחר שיר מהעשור שבו נולד. מקשיבים לשלושתם ברצף.',h:'שימו לב איך הצליל עצמו משתנה בין העשורים.'},
+ {t:'open',tots:1,q:'כל אחד בוחר שיר לרקוד עליו, ורוקדים עליו כולם.',h:'הקטנים בוחרים ראשונים.'},
+ {t:'open',tots:1,q:'שיר אחד, וכל אחד ממציא לו תנועה שחוזרת בפזמון.',h:'בסוף מבצעים את כל התנועות יחד.'},
+ {t:'open',tots:1,q:'מישהו מזמזם שיר בלי מילים, וכולם מנחשים מה זה.'},
+]},
+
+fam:{name:'המשפחה שלנו',ink:'#C97B92',ico:'fam',modes:['fam'],scored:false,note:'מדברים באמת',cards:[
+ {t:'fam',q:'מה הרגע המשפחתי שהכי צחקנו בו, שכולנו זוכרים עד היום?'},
+ {t:'fam',q:'איזו מסורת קטנה יש לנו שרק אנחנו מבינים?',h:'משפט פנימי, מאכל, שיר במכונית, שם משונה למשהו.'},
+ {t:'fam',q:'תגידו כל אחד משהו אחד שאתם מעריכים במישהו אחר שיושב פה.',h:'סבב: כל אחד בוחר מישהו אחר ואומר לו. אין דילוגים.'},
+ {t:'fam',q:'מה הדבר שהכי כיף לנו לעשות יחד, ולא עשינו הרבה זמן?'},
+ {t:'fam',q:'אם המשפחה שלנו הייתה להקה, איזה תפקיד לכל אחד?',h:'סולן, מתופף, מנהל הופעות, זה שכותב את השירים.'},
+ {t:'fam',q:'מה כל אחד מאיתנו הכי טוב בו, לדעת האחרים?',h:'כל אחד שומע מהאחרים במה הוא טוב. לא מעריכים את עצמנו.'},
+ {t:'fam',q:'איזה מקום היינו רוצים לראות יחד יום אחד?'},
+ {t:'fam',q:'מה הדבר הכי טעים שיוצא לנו כשאנחנו מבשלים ביחד?'},
+ {t:'fam',q:'איזה סיפור מהילדות של ההורים כאן שווה לשמוע שוב?',h:'ההורים מספרים, לני בוחרת את הסיפור.'},
+ {t:'fam',q:'מה משהו קטן שמישהו כאן עשה החודש ולא קיבל עליו מספיק קרדיט?'},
+ {t:'fam',q:'איזה שיר היה הופך למנון של המשפחה שלנו?'},
+ {t:'fam',q:'מה היינו רוצים שיהיה לנו יותר ממנו בחודש הקרוב?',h:'זמן, צחוק, יציאות, ארוחות משותפות, שקט.'},
+ {t:'fam',q:'אם היינו פותחים עסק משפחתי, מה היינו עושים ומי אחראי על מה?'},
+ {t:'fam',q:'מה הדבר שהכי מרגיע כל אחד מאיתנו אחרי יום קשה?'},
+ {t:'fam',q:'איזו החלטה טובה קיבלנו כמשפחה שאנחנו שמחים עליה?'},
+ {t:'fam',q:'מה כל אחד מאיתנו לומד מהאחרים בלי לשים לב?'},
+ {t:'fam',q:'איזה דבר קטן עובר איתנו מבית לבית ותמיד נמצא?',h:'חפץ, הרגל, שיר, בדיחה פנימית. כל אחד עונה על עצמו.'},
+ {t:'fam',q:'מה הדבר שהכי כיף כשכולנו נפגשים, ולא קורה ביום רגיל?'},
+ {t:'fam',q:'איזו מסורת חדשה שווה שנמציא לפעמים שאנחנו יחד?',h:'משהו קטן שחוזר. מאכל, משחק, שיר פתיחה.'},
+ {t:'fam',q:'מה כל אחד מאיתנו עושה כדי שלאחרים יהיה טוב, בלי שמישהו ביקש?'},
+ {t:'fam',q:'מה הכי כיף בזה שאנחנו משפחה גדולה?'},
+ {t:'fam',tots:1,q:'ברי ותואם - מי מצליח להבדיל ביניהם הכי מהר, ולפי מה?',h:'כל אחד מגלה את הסימן שהוא הולך לפיו.'},
+ {t:'fam',tots:1,q:'מה הדבר הכי מצחיק שהתאומים עשו לאחרונה?'},
+ {t:'fam',tots:1,q:'מה לני יודעת שהתאומים עוד לומדים - ומה הם יודעים שהיא כבר שכחה?'},
+ {t:'fam',tots:1,q:'מה כדאי ללמד את ברי ותואם השנה, וכל אחד לוקח דבר אחד?'},
+]},
+
+act:{name:'זמן איכות',ink:'#C9A961',ico:'act',modes:['duo','fam'],scored:false,note:'רעיון + הוראות',cards:[
+ {t:'act',mode:'both',q:'ערב מטבח הפוך',need:'מה שיש במקרר',time:'45 דקות',steps:['הצעיר/ה בחדר מחליט/ה מה מבשלים, בלי ויכוח.','המבוגרים מקבלים תפקידים והצעיר/ה מנהל/ת את המטבח.','אוכלים, ואז מדרגים את המנה מ-1 עד 10 עם נימוק.']},
+ {t:'act',mode:'both',q:'סיור צילום של 20 דקות',need:'טלפון אחד לכל אחד',time:'30 דקות',steps:['יוצאים החוצה ובוחרים נושא: משהו עגול, משהו כתום, משהו ישן.','לכל אחד 20 דקות לצלם חמש תמונות בנושא.','חוזרים, מציגים, וכל אחד בוחר את התמונה הכי טובה של מישהו אחר.']},
+ {t:'act',mode:'both',q:'טורניר משחקי כיסא',need:'כלום',time:'20 דקות',steps:['שלושה סבבים: מי מחזיק מעמד יותר בלי למצמץ, מי בונה מגדל גבוה יותר ממה שיש על השולחן, מי ממציא בדיחה מצחיקה יותר.','כל סבב שווה נקודה.','המפסיד מכין שתייה לכולם.']},
+ {t:'act',mode:'both',q:'מכתב לעתיד',need:'נייר ועט',time:'25 דקות',steps:['כל אחד כותב מכתב לעצמו בעוד שנה.','מקפלים, כותבים על הגב את התאריך שבו פותחים.','שמים במקום אחד קבוע בבית - ומסמנים ביומן.']},
+ {t:'act',mode:'both',q:'ערב טעימות עיוור',need:'5 דברים מהמטבח',time:'25 דקות',steps:['אחד בוחר חמישה מאכלים, השאר עוצמים עיניים.','טועמים ומנחשים מה זה.','מחליפים תפקידים - ומי שניחש הכי הרבה בוחר את הסרט.']},
+ {t:'act',mode:'both',q:'מסלול מכשולים בסלון',need:'כריות, כיסאות, חבל',time:'30 דקות',steps:['בונים יחד מסלול מכל מה שיש בסלון.','כל אחד עובר פעם אחת ומודדים זמן.','סבב שני: כל אחד חייב לשפר את הזמן של עצמו, לא של האחרים.']},
+ {t:'act',mode:'duo',q:'ערב סרט עם משימה',need:'סרט אחד',time:'שעתיים',steps:['בוחרים סרט שאף אחד מכם לא ראה.','לפני שמתחילים, כל אחד כותב על פתק איך הסרט ייגמר.','בסוף פותחים את הפתקים. מי שהיה קרוב יותר בוחר את הסרט הבא.']},
+ {t:'act',mode:'duo',q:'הליכת שאלות',need:'נעליים',time:'40 דקות',steps:['יוצאים להליכה בלי יעד.','כל פינת רחוב = שאלה חדשה שאחד שואל את השני.','חוזרים הביתה רק אחרי עשר שאלות.']},
+ {t:'act',mode:'duo',q:'פרויקט של שעה',need:'תלוי מה בוחרים',time:'שעה',steps:['בוחרים יחד משהו קטן לבנות או לתקן בבית.','מחלקים תפקידים ומתחילים - שעה על השעון.','מצלמים לפני ואחרי. גם אם יצא עקום, זה שלכם.']},
+ {t:'act',mode:'duo',q:'ארוחת בוקר לארוחת ערב',need:'ביצים, לחם, מה שבא',time:'40 דקות',steps:['מכינים ארוחת בוקר מלאה בשעה 8 בערב.','שמים מוזיקה שהיא לא של אף אחד מכם.','אוכלים בפיג\'מה. זה חלק מהחוקים.']},
+ {t:'act',mode:'fam',tots:0,q:'ארוחה שכל אחד אחראי על מנה',need:'קניה קטנה מראש',time:'שעה וחצי',steps:['כל אחד בוחר מנה אחת שהוא אחראי עליה מא\' עד ת\'.','מבשלים במקביל, מותר לבקש עזרה אבל לא להעביר אחריות.','אוכלים יחד וכל אחד מספר למה בחר במנה שלו.']},
+ {t:'act',mode:'fam',tots:0,q:'אלבום החמישה',need:'טלפונים',time:'30 דקות',steps:['כל אחד בוחר חמש תמונות מהשנה האחרונה שמספרות משהו.','מציגים אחד אחד ומספרים את הסיפור מאחורי כל תמונה.','בוחרים יחד תמונה אחת להדפיס.']},
+ {t:'act',mode:'fam',q:'משחק הכללים החדשים',need:'משחק קופסה ישן',time:'45 דקות',steps:['מוציאים משחק קופסה שכולם כבר מכירים.','כל אחד ממציא חוק חדש אחד, מוזר ככל שירצה.','משחקים עם כל החוקים החדשים יחד. בהצלחה.']},
+ {t:'act',mode:'fam',tots:0,q:'ערב טריוויה על עצמנו',need:'נייר ועט',time:'35 דקות',steps:['כל אחד כותב בסתר שלוש עובדות על עצמו, אחת מהן שקר.','מקריאים בתורות והשאר מנחשים מה השקר.','מי שהצליח לבלבל את כולם מנצח.']},
+ {t:'act',mode:'fam',q:'תכנון סופ"ש יחד',need:'לוח שנה',time:'25 דקות',steps:['כל אחד מציע פעילות אחת לסופ"ש הקרוב.','בוחרים אחת מכל הצעה - כולן נכנסות, גם אם קצר.','כותבים ביומן. מה שנכנס ליומן קורה.']},
+ {t:'act',mode:'fam',tots:1,q:'ציד אוצרות בבית',need:'פתקים או ציורים',time:'25 דקות',steps:['הגדולים מחביאים חמישה דברים ומציירים רמז לכל אחד.','הקטנים מחפשים, והגדולים אומרים רק "חם" או "קר".','מי שמצא מחביא בסבב הבא.']},
+ {t:'act',mode:'fam',tots:1,q:'מופע כישרונות של חמש דקות',need:'ספה בתור קהל',time:'30 דקות',steps:['לכל אחד חמש דקות להופיע במה שבא לו.','הקטנים ראשונים, לפני שנגמרת להם הסבלנות.','כולם מוחאים כפיים לכולם. אין ניקוד ואין שופטים.']},
+ {t:'act',mode:'fam',tots:1,q:'מגדל אחד, כל הידיים',need:'קוביות, כריות, מה שיש',time:'20 דקות',steps:['בונים יחד מגדל אחד, גבוה ככל שאפשר.','כל אחד מוסיף חלק אחד בתורו, מהקטן לגדול.','מצלמים לפני שהוא נופל. הוא ייפול.']},
+ {t:'act',mode:'fam',tots:1,q:'ריקוד קפוא',need:'מוזיקה',time:'15 דקות',steps:['שמים מוזיקה וכולם רוקדים.','מי שאחראי על המוזיקה עוצר בלי להודיע - וכולם קופאים.','מי שזז מקבל את השליטה במוזיקה.']},
+ {t:'act',mode:'fam',tots:1,q:'ארוחה בצבע אחד',need:'קניה קטנה מראש',time:'שעה',steps:['בוחרים יחד צבע.','כל אחד אחראי להביא לשולחן משהו אחד בצבע הזה.','אוכלים ומחליטים אם הצבע הצליח.']},
+ {t:'act',mode:'fam',tots:0,q:'ניקיון של 20 דקות עם פרס',need:'טיימר, מוזיקה',time:'30 דקות',steps:['כל אחד בוחר פינה אחת בבית שמפריעה לו.','20 דקות על הטיימר, מוזיקה חזקה, כולם עובדים במקביל.','מסתובבים ומראים אחד לשני מה השתנה. אחר כך גלידה.']},
+]},
+
+mis:{name:'לוקחים על עצמנו',ink:'#4FB3A8',ico:'mis',modes:['fam'],scored:false,note:'כל אחד בוחר משהו',cards:[
+ {t:'mis',q:'כל אחד בוחר דבר אחד שיעשה השבוע כדי שיהיה לכולנו יותר נעים.',ideas:['לקחת אחריות על משהו שאף אחד לא אוהב לעשות','להכין ארוחה אחת לכולם','לארגן פינה משותפת שכולם משתמשים בה','לוותר בלי לספור נקודות']},
+ {t:'mis',q:'כל אחד בוחר דבר אחד שיעשה השבוע בשביל מישהו אחר כאן - בלי שיבקשו ממנו.',ideas:['לעזור במשהו שקשה לו/ה','להכין הפתעה קטנה','לפנות זמן רק בשבילו/ה','לומר משהו טוב בקול, לא בראש']},
+ {t:'mis',q:'כל אחד מתחייב למשהו קטן שיחזור על עצמו השבוע - קטן ואפשרי.',ideas:['להתקשר או לכתוב פעם אחת ביום','ארוחת ערב יחד בלי טלפונים','חמש דקות של סדר לפני השינה','לשאול "איך היה היום" ולחכות לתשובה מלאה']},
+ {t:'mis',q:'כל אחד בוחר הרגל אחד שהוא רוצה לשפר, והשאר מסכימים לעזור לו.',ideas:['לקום בזמן','פחות מסך לפני השינה','לזוז יותר','לדחות פחות דברים']},
+ {t:'mis',q:'כל אחד בוחר משהו שהוא רוצה ללמוד החודש, ומספר על זה בפעם הבאה.',ideas:['מתכון חדש','לנגן שיר אחד','משהו על נושא שמסקרן','מיומנות שימושית בבית']},
+ {t:'mis',q:'כל אחד בוחר דבר אחד שהוא רוצה שנעשה יחד לפני סוף החודש.',ideas:['יציאה למקום חדש','ערב משחקים קבוע','בישול משותף','טיול קצר']},
+ {t:'mis',q:'כל אחד בוחר מישהו שכדאי לשמח לו את היום השבוע.',ideas:['שיחה לסבא או סבתא','הודעה לחבר/ה שלא דיברנו איתו מזמן','לעזור לשכן','להגיד תודה למישהו שלא מצפה לזה']},
+ {t:'mis',q:'כל אחד בוחר משהו אחד שהוא מוותר עליו השבוע - וזה יעשה טוב לכולם.',ideas:['להתעצבן על דברים קטנים','לדחות משימות','טלפון בזמן ארוחה','להתווכח על מי צודק']},
+]}
+};
+
+const LEN=8;
+const KICK={mc:'שאלת ידע',tf:'אמת או מיתוס?',vis:'מזהים',guess:'נחש אותי',open:'שאלה פתוחה',who:'מי מאיתנו',fam:'המשפחה שלנו',act:'פעילות',mis:'משימת בית'};
+
+/* ---------- מצב ---------- */
+let mode='duo', tots=false, players=[], me=0, totals=[], seed=0, deckNo=1;
+let pack=null, key='', order=[], i=0, ses=[], first=0, hist=[], locked=false;
+let used={};
+const $=id=>document.getElementById(id);
+const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2500)};
+const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');window.scrollTo(0,0)};
+const rnd32=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const shuf=(arr,s)=>{const r=rnd32(s),a=[...arr];for(let k=a.length-1;k>0;k--){const j=Math.floor(r()*(k+1));[a[k],a[j]]=[a[j],a[k]]}return a};
+const hash=s=>{let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)};
+
+/* ---------- בחירת הרכב ---------- */
+const MODES=[
+ {id:'duo',name:'אחד על אחד',desc:'שני שחקנים',svg:'<svg viewBox="0 0 48 48" fill="none"><circle cx="16" cy="17" r="7" stroke="#C9A961" stroke-width="3"/><path d="M5 38c0-6.5 5-11 11-11s11 4.5 11 11" stroke="#C9A961" stroke-width="3" stroke-linecap="round"/><circle cx="35" cy="20" r="6" stroke="#4FB3A8" stroke-width="3"/><path d="M26 38c.5-6 4-9.5 9-9.5s8.5 3.5 9 9.5" stroke="#4FB3A8" stroke-width="3" stroke-linecap="round"/></svg>'},
+ {id:'fam',name:'משפחתי',desc:'שלושה ומעלה',svg:'<svg viewBox="0 0 48 48" fill="none"><circle cx="12" cy="16" r="6" stroke="#C97B92" stroke-width="3"/><circle cx="24" cy="13" r="6.5" stroke="#C9A961" stroke-width="3"/><circle cx="36" cy="16" r="6" stroke="#4FB3A8" stroke-width="3"/><path d="M3 38c0-5.5 4-9 9-9M45 38c0-5.5-4-9-9-9M14 40c0-6 4.5-10 10-10s10 4 10 10" stroke="#E9E7DA" stroke-width="3" stroke-linecap="round"/></svg>'}
+];
+(function(){
+ const box=$('modes');
+ MODES.forEach(m=>{
+  const d=document.createElement('div');
+  d.className='mode'+(m.id===mode?' on':'');d.dataset.id=m.id;
+  d.innerHTML=m.svg+'<div class="mname">'+m.name+'</div><div class="mdesc">'+m.desc+'</div>';
+  d.addEventListener('click',()=>setMode(m.id));
+  box.appendChild(d);
+ });
+})();
+function setMode(id){
+ mode=id;
+ document.querySelectorAll('.mode').forEach(d=>d.classList.toggle('on',d.dataset.id===id));
+ const fam = id==='fam';
+ ['f2','f3','f4','ftots'].forEach(x=>$(x).style.display=fam?'block':'none');
+ if(!fam){tots=false;$('totsBox').classList.remove('on')}
+}
+
+/* ---------- פתיחה ---------- */
+function begin(){
+ const code=$('code').value.trim();
+ if(code.length!==4||isNaN(+code)){toast('צריך קוד של 4 ספרות, זהה בכל הטלפונים');return}
+ const raw=[$('p0').value.trim(),$('p1').value.trim()];
+ if(mode==='fam'){
+  raw.push($('p2').value.trim());
+  [$('p3').value.trim(),$('p4').value.trim()].forEach(n=>{if(n)raw.push(n)});
+ }
+ if(raw.some(n=>!n)){toast(mode==='fam'?'צריך לפחות שלושה שמות':'צריך שני שמות');return}
+ if(new Set(raw).size!==raw.length){toast('שני שמות זהים - תוסיפו אות להבדיל');return}
+ const mine=raw[0];
+ players=[...raw].sort((a,b)=>a.localeCompare(b,'he'));
+ me=players.indexOf(mine);
+ totals=players.map(()=>0);
+ seed=(parseInt(code,10)*7919+hash(mode)+players.length*331+(tots?1009:0))%2147483647;
+ deckNo=1;used={};
+ goHome();
+}
+function sig(){return (seed+deckNo*77+players.length*13+(tots?7:0))%90+10}
+
+function goHome(){
+ $('setNo').textContent=deckNo;
+ $('synced').textContent='מספר סנכרון '+sig()+' · חייב להיות זהה בכל הטלפונים';
+ $('homelab').textContent=(mode==='fam'?'הרכב משפחתי · '+players.length+' שחקנים':'אחד על אחד')+(tots?' · עם הקטנים':'')+' · 8 קלפים בסבב';
+ drawBoard($('board'),totals,-1);
+ const box=$('tiles');box.innerHTML='';
+ Object.keys(PACKS).forEach(k=>{
+  const p=PACKS[k];
+  if(!p.modes.includes(mode))return;
+  const pool=poolFor(k).length;
+  const done=(used[k+'#'+deckNo]||0)*LEN;
+  const left=Math.max(0,pool-done);
+  const d=document.createElement('div');
+  d.className='tile';
+  d.innerHTML='<span class="edge" style="background:'+p.ink+'"></span>'
+   +(p.scored?'':'<span class="flag">ללא ניקוד</span>')
+   +I[p.ico]
+   +'<div class="tn">'+p.name+'</div>'
+   +'<div class="tl">'+(left>0?left+' קלפים':'סבב חדש')+'</div>';
+  d.addEventListener('click',()=>openPack(k));
+  box.appendChild(d);
+ });
+ show('s-home');
+}
+function drawBoard(box,vals,turn){
+ box.innerHTML='';
+ box.classList.toggle('tight',players.length>3);
+ players.forEach((n,idx)=>{
+  const c=document.createElement('div');
+  c.className='pchip'+(idx===me?' you':'')+(idx===turn?' turn':'');
+  c.innerHTML='<div class="pn">'+n+(idx===me?' (את/ה)':'')+'</div><div class="pv" id="'+(box.id==='gboard'?'gv'+idx:'bv'+idx)+'">'+vals[idx]+'</div>';
+  box.appendChild(c);
+ });
+}
+function poolFor(k){
+ return PACKS[k].cards.filter(c=>{
+  if(c.mode&&c.mode!=='both'&&c.mode!==mode)return false;
+  if(c.tots===1&&!tots)return false;   /* רק כשהקטנים משחקים */
+  if(c.tots===0&&tots)return false;    /* דורש ריכוז - לא עכשיו */
+  return true;
+ });
+}
+
+/* ---------- סבב ---------- */
+function openPack(k){
+ pack=k;key=k+'#'+deckNo;
+ const pool=poolFor(k), cyc=used[key]||0;
+ const ord=shuf(pool.map((_,x)=>x), seed+hash(k)+deckNo*7717);
+ const start=(cyc*LEN)%pool.length;
+ let picked=ord.slice(start,start+LEN);
+ if(picked.length<LEN)picked=picked.concat(ord.slice(0,LEN-picked.length));
+ ses=picked.map(x=>pool[x]);
+ first=(seed+cyc+deckNo+hash(k))%players.length;
+ i=0;hist=[];
+ window._ses=players.map(()=>0);
+ show('s-play');draw();
+}
+const turnOf=()=>(first+i)%players.length;
+const card=()=>ses[i];
+
+function draw(){
+ if(i>=ses.length){finish();return}
+ locked=false;
+ const c=card(), t=turnOf(), p=PACKS[pack];
+ const other=players[(t+1)%players.length];
+ const el=$('card');
+ el.classList.remove('wrong','right');
+ el.style.animation='none';el.offsetHeight;el.style.animation='';
+ $('count').textContent=(i+1)+'/'+ses.length;
+ $('rail').style.width=(i/ses.length*100)+'%';
+ drawBoard($('gboard'),window._ses,t);
+
+ const kick=$('kicker');
+ kick.textContent=KICK[c.t]||'';
+ kick.style.color=p.ink;
+ $('qq').textContent=(c.q||'').replace(/{x}/g,other);
+
+ const plate=$('plate');
+ if(c.t==='vis'&&ART[c.art]){plate.style.display='flex';plate.innerHTML='<div class="press">'+ART[c.art]+'</div>'}
+ else{plate.style.display='none';plate.innerHTML=''}
+
+ $('facts').classList.remove('on');$('facts').textContent='';
+ const st=$('steps'), pk=$('picks');
+ st.style.display='none';st.innerHTML='';pk.style.display='none';pk.innerHTML='';
+
+ $('hint').textContent=
+   c.t==='mc'||c.t==='tf'||c.t==='vis' ? players[t]+' עונה בקול - ואז כולם מקישים על אותה תשובה.'
+  :c.t==='guess' ? players[t]+' מנחש/ת בקול, '+other+' אומר/ת אם צדק/ה.'
+  :c.t==='who' ? 'סופרים עד שלוש ומצביעים יחד.'
+  :c.t==='fam' ? (c.h||'מדברים בלי למהר. אין תשובה נכונה.')
+  :c.t==='open'&&c.h ? c.h
+  :c.t==='act' ? 'הפעילות הזאת לא לעכשיו בהכרח - אפשר לקבוע אותה ליום אחר.'
+  :c.t==='mis' ? 'כל אחד אומר בקול מה הוא בוחר. אחר כך אי אפשר להתחרט.'
+  :'אין תשובה נכונה. פשוט מדברים.';
+
+ if(c.t==='act'){
+  st.style.display='block';
+  st.innerHTML='<div class="kit">🧰 צריך: '+c.need+' · ⏱ '+c.time+'</div><ol>'+c.steps.map(s=>'<li>'+s+'</li>').join('')+'</ol>';
+ }
+ if(c.t==='mis'){
+  pk.style.display='block';
+  pk.innerHTML='<div class="pt">רעיונות, אם נתקעתם:</div>'+c.ideas.map(x=>'<div class="row">'+x+'</div>').join('');
+ }
+
+ $('whose').innerHTML = (c.t==='fam'||c.t==='act'||c.t==='mis')
+   ? 'כולם ביחד'
+   : (t===me?'התור <b>שלך</b>':'התור של <b>'+players[t]+'</b>');
+
+ const opts=$('opts'), acts=$('acts');
+ opts.innerHTML='';acts.innerHTML='';acts.classList.remove('on');
+ opts.className='opts on'+(c.t==='tf'?' pair':'');
+
+ if(c.t==='mc'||c.t==='vis'){
+  shuf([0,1,2],seed+i*97+hash(pack)+deckNo).forEach(x=>{
+   const b=mk(c.o[x],'opt',()=>judge(c.o[x]===c.o[0],b));
+   opts.appendChild(b);
+  });
+ }else if(c.t==='tf'){
+  [['אמת',true],['מיתוס',false]].forEach(([l,v])=>{
+   const b=mk(l,'opt',()=>judge(v===c.ans,b));
+   opts.appendChild(b);
+  });
+ }else if(c.t==='guess'){
+  opts.classList.remove('on');
+  acts.appendChild(mk('ניחוש נכון','btn btn-yes',()=>manual(1)));
+  acts.appendChild(mk('פספוס','btn btn-no',()=>manual(0)));
+  acts.classList.add('on');
+ }else if(c.t==='who'){
+  opts.classList.remove('on');
+  acts.appendChild(mk('הצבענו על אותו אחד','btn btn-yes',()=>manual('all')));
+  acts.appendChild(mk('חילוקי דעות','btn btn-no',()=>manual(0)));
+  acts.classList.add('on');
+ }else{
+  opts.classList.remove('on');
+  acts.appendChild(mk(c.t==='mis'?'כולם בחרו':(c.t==='act'?'רשמנו':'דיברנו, הלאה'),'btn btn-nx',()=>step()));
+  acts.classList.add('on');
+ }
+}
+function mk(txt,cls,fn){const b=document.createElement('button');b.type='button';b.className=cls;b.textContent=txt;b.addEventListener('click',fn);return b}
+
+function judge(ok,clicked){
+ if(locked)return;locked=true;
+ const c=card(), el=$('card');
+ [...$('opts').children].forEach(b=>{
+  const right = c.t==='tf' ? (b.textContent==='אמת')===c.ans : b.textContent===c.o[0];
+  if(right)b.classList.add('yes'); else if(b===clicked)b.classList.add('no'); else b.classList.add('off');
+  b.disabled=true;
+ });
+ hist.push([...window._ses]);
+ if(ok){
+  const t=turnOf();window._ses[t]++;
+  const v=$('gv'+t);if(v){v.textContent=window._ses[t];v.classList.remove('bump');void v.offsetWidth;v.classList.add('bump')}
+  el.classList.add('right');burst();beep(1);
+ }else{el.classList.add('wrong');beep(0)}
+ if(c.f){$('facts').textContent=c.f;$('facts').classList.add('on')}
+ const acts=$('acts');acts.innerHTML='';
+ acts.appendChild(mk(i+1>=ses.length?'לסיכום':'הקלף הבא','btn btn-nx',()=>step()));
+ acts.classList.add('on');
+}
+function manual(kind){
+ if(locked)return;locked=true;
+ hist.push([...window._ses]);
+ const el=$('card');
+ if(kind==='all'){players.forEach((_,x)=>window._ses[x]++);el.classList.add('right');burst();beep(1)}
+ else if(kind===1){window._ses[turnOf()]++;el.classList.add('right');burst();beep(1)}
+ else{el.classList.add('wrong');beep(0)}
+ drawBoard($('gboard'),window._ses,turnOf());
+ setTimeout(step,620);
+}
+function step(){i++;draw()}
+function back(){
+ if(i===0){toast('זה כבר הקלף הראשון');return}
+ i--;window._ses=hist.pop()||players.map(()=>0);draw();
+ toast('חזרנו קלף אחורה - שכולם יעשו אותו דבר');
+}
+
+/* ---------- סיום ---------- */
+function finish(){
+ used[key]=(used[key]||0)+1;
+ const p=PACKS[pack];
+ if(p.scored)players.forEach((_,x)=>totals[x]+=window._ses[x]);
+ const max=Math.max(...window._ses);
+ const win=window._ses.filter(v=>v===max).length===1 ? window._ses.indexOf(max) : -1;
+ if(!p.scored){
+  $('finEm').textContent='🤍';
+  $('finT').textContent='סיימנו';
+  $('finP').textContent='"'+p.name+'" זו קטגוריה בלי ניקוד. מה שנאמר פה שווה יותר מנקודות.';
+ }else if(win<0){
+  $('finEm').textContent='🤝';$('finT').textContent='תיקו';
+  $('finP').textContent='אף אחד לא ויתר. סבב נוסף יכריע.';
+ }else{
+  $('finEm').textContent='🏆';$('finT').textContent=players[win]+' לוקח/ת';
+  $('finP').textContent='קטגוריה: '+p.name+' · הניקוד המצטבר מחכה בשולחן.';
+  if(win===me)burst();
+ }
+ drawBoard($('finBoard'),totals,-1);
+ show('s-done');
+}
+
+/* ---------- אפקטים ---------- */
+function burst(){
+ const box=$('conf'), inks=['#C9A961','#C97B92','#4FB3A8','#7FA88B','#9084C9','#E9E7DA'];
+ for(let k=0;k<16;k++){
+  const p=document.createElement('i');
+  p.style.right=Math.random()*100+'%';
+  p.style.background=inks[Math.floor(Math.random()*inks.length)];
+  p.style.animationDuration=(1.1+Math.random()*1.2)+'s';
+  p.style.animationDelay=(Math.random()*.22)+'s';
+  const s=4+Math.random()*4;p.style.width=s+'px';p.style.height=s+'px';
+  box.appendChild(p);setTimeout(()=>p.remove(),2400);
+ }
+}
+let AC=null;
+function beep(good){
+ try{
+  AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  const seq=good?[[660,0,.12],[880,.08,.13],[1320,.17,.2]]:[[200,0,.22],[150,.09,.28]];
+  seq.forEach(([f,d,dur])=>{
+   const o=AC.createOscillator(),g=AC.createGain();
+   o.type=good?'sine':'sawtooth';o.frequency.value=f;o.connect(g);g.connect(AC.destination);
+   const t=AC.currentTime+d;g.gain.setValueAtTime(good?.16:.11,t);
+   g.gain.exponentialRampToValueAtTime(.001,t+dur);o.start(t);o.stop(t+dur);
+  });
+ }catch(e){}
+}
+
+/* ---------- חפיסה ---------- */
+function bumpDeck(d){
+ deckNo=Math.min(99,Math.max(1,deckNo+d));
+ goHome();
+ toast('חפיסה '+deckNo+' - שכולם יהיו על אותו מספר');
+}
+
+/* ---------- חיווט ---------- */
+let wired=false;
+function wire(){
+ if(wired)return;wired=true;
+ $('btnGo').addEventListener('click',begin);
+ $('btnHow').addEventListener('click',()=>{
+  const b=$('howbox');b.style.display=b.style.display==='none'?'block':'none';
+ });
+ $('setUp').addEventListener('click',()=>bumpDeck(1));
+ $('setDown').addEventListener('click',()=>bumpDeck(-1));
+ $('totsBox').addEventListener('click',()=>{
+  tots=!tots;$('totsBox').classList.toggle('on',tots);
+ });
+ $('btnMode').addEventListener('click',()=>show('s-setup'));
+ let wipeArm=0;
+ $('btnWipe').addEventListener('click',()=>{
+  if(Date.now()-wipeArm<3000){totals=players.map(()=>0);used={};goHome();toast('הניקוד אופס');return}
+  wipeArm=Date.now();toast('לוחצים שוב כדי לאפס את הניקוד');
+ });
+ let homeArm=0;
+ $('btnHome').addEventListener('click',()=>{
+  if(Date.now()-homeArm<3000){goHome();return}
+  homeArm=Date.now();toast('הסבב הנוכחי לא יישמר - לוחצים שוב');
+ });
+ $('btnBack').addEventListener('click',back);
+ $('btnAgain').addEventListener('click',goHome);
+ $('btnBackHome').addEventListener('click',goHome);
+ const v=$('ver');if(v){v.textContent='גרסה 9 · מוכן';v.style.color='#7FA88B'}
+}
+window.addEventListener('error',e=>{try{toast('שגיאה: '+(e.message||'לא ידועה'))}catch(x){}});
+wire();
+document.addEventListener('DOMContentLoaded',wire);
+window.addEventListener('load',wire);
+</script>
+</body>
+</html>
