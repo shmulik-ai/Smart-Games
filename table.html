@@ -233,6 +233,11 @@
   .fin .pchip{padding:16px 10px}
   .fin .pchip .pv{font-size:32px}
   .finbtns{display:flex;flex-direction:column;gap:9px;margin-top:30px}
+  .resume{display:none;margin:14px 0 4px;padding:14px;border:1.5px solid var(--line2);border-radius:var(--r);background:var(--raise);text-align:center}
+  .resume.on{display:block}
+  .resume p{font-size:13px;color:var(--dim);margin-bottom:10px}
+  .resume .btn{padding:11px 16px;font-size:14px}
+  .home-actions{display:flex;justify-content:center;gap:14px;margin-top:14px;flex-wrap:wrap}
 
   .toast{
     position:fixed;bottom:24px;right:50%;transform:translateX(50%);background:var(--ink);
@@ -282,6 +287,7 @@
       </div>
     </div>
 
+    <div id="resumeBox" class="resume"><p id="resumeText"></p><button type="button" id="btnResume" class="btn btn-alt">להמשיך מהמקום שעצרתם</button></div>
     <button type="button" id="btnGo" class="btn btn-go">פותחים את השולחן</button>
     <div style="text-align:center"><button type="button" id="btnHow" class="linkbtn">איך זה עובד?</button></div>
     <div id="howbox" style="display:none;background:var(--ink2);border-radius:11px;padding:12px 14px;font-size:12.5px;line-height:1.75;color:#B9CDD6;margin-top:4px">
@@ -303,12 +309,14 @@
     <button type="button" id="setDown">−</button>
   </div>
   <div class="synced" id="synced"></div>
+  <div class="sublab" id="eveningLab"></div>
   <h2 class="sec">מה פותחים?</h2>
   <div class="sublab" id="homelab"></div>
   <div class="tiles" id="tiles"></div>
-  <div style="display:flex;justify-content:center;gap:14px;margin-top:14px">
+  <div class="home-actions">
     <button type="button" id="btnMode" class="linkbtn">שינוי הרכב</button>
-    <button type="button" id="btnWipe" class="linkbtn">איפוס ניקוד</button>
+    <button type="button" id="btnScoreReset" class="linkbtn">איפוס ניקוד בלבד</button>
+    <button type="button" id="btnNewEvening" class="linkbtn">ערב חדש</button>
   </div>
 </div>
 
@@ -828,15 +836,43 @@ const LEN=8;
 const KICK={mc:'שאלת ידע',tf:'אמת או מיתוס?',vis:'מזהים',guess:'נחש אותי',open:'שאלה פתוחה',who:'מי מאיתנו',fam:'המשפחה שלנו',act:'פעילות',mis:'לוקחים על עצמנו',myst:'תעלומה'};
 
 /* ---------- מצב ---------- */
-let mode='duo', tots=false, players=[], me=0, totals=[], seed=0, deckNo=1;
+let mode='duo', tots=false, players=[], me=0, totals=[], seed=0, deckNo=1, codeValue='', evening=1;
 let pack=null, key='', order=[], i=0, ses=[], first=0, hist=[], locked=false;
 let used={};
+const SAVE_KEY='hashulchan-state', SAVE_VERSION=1;
 const $=id=>document.getElementById(id);
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2500)};
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');window.scrollTo(0,0)};
 const rnd32=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const shuf=(arr,s)=>{const r=rnd32(s),a=[...arr];for(let k=a.length-1;k>0;k--){const j=Math.floor(r()*(k+1));[a[k],a[j]]=[a[j],a[k]]}return a};
 const hash=s=>{let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)};
+
+function seedForEvening(){
+ seed=(parseInt(codeValue,10)*7919+hash(mode)+players.length*331+(tots?1009:0)+(evening-1)*15485863)%2147483647;
+}
+function saveState(){
+ try{
+  localStorage.setItem(SAVE_KEY,JSON.stringify({v:SAVE_VERSION,mode,tots,players,me,totals,deckNo,used,codeValue,evening}));
+ }catch(e){}
+}
+function savedState(){
+ try{
+  const x=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+  if(!x||x.v!==SAVE_VERSION||!['duo','fam'].includes(x.mode)||!Array.isArray(x.players)||x.players.length<2||!Array.isArray(x.totals)||x.totals.length!==x.players.length||!/^\d{4}$/.test(x.codeValue)||!Number.isInteger(x.evening)||x.evening<1||!x.used||typeof x.used!=='object')return null;
+  return x;
+ }catch(e){return null}
+}
+function refreshResume(){
+ const x=savedState(), box=$('resumeBox');
+ if(!x){box.classList.remove('on');return}
+ $('resumeText').textContent='נשמר ערב '+x.evening+' עם '+x.players.join(', ')+' וחפיסה '+x.deckNo;
+ box.classList.add('on');
+}
+function resumeSaved(){
+ const x=savedState();if(!x){toast('לא נמצא משחק שמור');refreshResume();return}
+ ({mode,tots,players,me,totals,deckNo,used,codeValue,evening}=x);
+ seedForEvening();setMode(mode);goHome();toast('חזרנו למקום שעצרתם');
+}
 
 /* ---------- בחירת הרכב ---------- */
 const MODES=[
@@ -876,7 +912,7 @@ function begin(){
  players=[...raw].sort((a,b)=>a.localeCompare(b,'he'));
  me=players.indexOf(mine);
  totals=players.map(()=>0);
- seed=(parseInt(code,10)*7919+hash(mode)+players.length*331+(tots?1009:0))%2147483647;
+ codeValue=code;evening=1;seedForEvening();
  deckNo=1;used={};
  goHome();
 }
@@ -885,6 +921,7 @@ function sig(){return (seed+deckNo*77+players.length*13+(tots?7:0))%90+10}
 function goHome(){
  $('setNo').textContent=deckNo;
  $('synced').textContent='מספר סנכרון '+sig()+' · חייב להיות זהה בכל הטלפונים';
+ $('eveningLab').textContent='קוד '+codeValue+' · ערב '+evening+' · חייב להיות זהה בכל הטלפונים';
  $('homelab').textContent=(mode==='fam'?'הרכב משפחתי · '+players.length+' שחקנים':'אחד על אחד')+(tots?' · עם הקטנים':'')+' · 8 קלפים בסבב';
  drawBoard($('board'),totals,-1);
  const box=$('tiles');box.innerHTML='';
@@ -892,7 +929,7 @@ function goHome(){
   const p=PACKS[k];
   if(!p.modes.includes(mode))return;
   const pool=poolFor(k).length;
-  const seen=Math.min(pool,((deckNo-1)+(used[k+'#'+deckNo]||0))*LEN);
+  const seen=Math.min(pool,(used[k]||0)*LEN);
   const left=pool-seen;
   const d=document.createElement('div');
   d.className='tile';
@@ -904,6 +941,7 @@ function goHome(){
   d.addEventListener('click',()=>openPack(k));
   box.appendChild(d);
  });
+ saveState();
  show('s-home');
 }
 function drawBoard(box,vals,turn){
@@ -927,11 +965,11 @@ function poolFor(k){
 
 /* ---------- סבב ---------- */
 function openPack(k){
- pack=k;key=k+'#'+deckNo;
+ pack=k;key=k;
  const pool=poolFor(k), cyc=used[key]||0;
  /* חלון מתקדם: כל חפיסה מושכת קלפים חדשים לגמרי מהמאגר,
     ורק כשהמאגר נגמר יש ערבוב חדש וסיבוב נוסף */
- const pos=((deckNo-1)+cyc)*LEN;
+ const pos=cyc*LEN;
  const pass=Math.floor(pos/pool.length);
  const ord=shuf(pool.map((_,x)=>x), seed+hash(k)+pass*104729);
  const start=pos%pool.length;
@@ -1097,6 +1135,7 @@ function finish(){
   if(win===me)burst();
  }
  drawBoard($('finBoard'),totals,-1);
+ saveState();
  show('s-done');
 }
 
@@ -1130,7 +1169,7 @@ function beep(good){
 /* ---------- חפיסה ---------- */
 function bumpDeck(d){
  deckNo=Math.min(99,Math.max(1,deckNo+d));
- goHome();
+ saveState();goHome();
  toast('חפיסה '+deckNo+' - שכולם יהיו על אותו מספר');
 }
 
@@ -1139,6 +1178,7 @@ let wired=false;
 function wire(){
  if(wired)return;wired=true;
  $('btnGo').addEventListener('click',begin);
+ $('btnResume').addEventListener('click',resumeSaved);
  $('btnHow').addEventListener('click',()=>{
   const b=$('howbox');b.style.display=b.style.display==='none'?'block':'none';
  });
@@ -1148,10 +1188,15 @@ function wire(){
   tots=!tots;$('totsBox').classList.toggle('on',tots);
  });
  $('btnMode').addEventListener('click',()=>show('s-setup'));
- let wipeArm=0;
- $('btnWipe').addEventListener('click',()=>{
-  if(Date.now()-wipeArm<3000){totals=players.map(()=>0);used={};goHome();toast('הניקוד אופס');return}
-  wipeArm=Date.now();toast('לוחצים שוב כדי לאפס את הניקוד');
+ let scoreArm=0;
+ $('btnScoreReset').addEventListener('click',()=>{
+  if(Date.now()-scoreArm<3000){totals=players.map(()=>0);saveState();goHome();toast('הניקוד אופס, הקלפים שנראו נשמרו');return}
+  scoreArm=Date.now();toast('לוחצים שוב כדי לאפס רק את הניקוד');
+ });
+ let eveningArm=0;
+ $('btnNewEvening').addEventListener('click',()=>{
+  if(Date.now()-eveningArm<3000){evening++;totals=players.map(()=>0);used={};deckNo=1;seedForEvening();saveState();goHome();toast('ערב '+evening+' התחיל, שכולם יעברו לאותו מספר ערב');return}
+  eveningArm=Date.now();toast('לוחצים שוב לערב חדש עם קלפים וניקוד מאופסים');
  });
  let homeArm=0;
  $('btnHome').addEventListener('click',()=>{
@@ -1161,7 +1206,8 @@ function wire(){
  $('btnBack').addEventListener('click',back);
  $('btnAgain').addEventListener('click',goHome);
  $('btnBackHome').addEventListener('click',goHome);
- const v=$('ver');if(v){v.textContent='גרסה 10 · מוכן';v.style.color='#4C8A5C'}
+ refreshResume();
+ const v=$('ver');if(v){v.textContent='גרסה 11 · מוכן';v.style.color='#4C8A5C'}
 }
 window.addEventListener('error',e=>{try{toast('שגיאה: '+(e.message||'לא ידועה'))}catch(x){}});
 wire();
